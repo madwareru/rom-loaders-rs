@@ -9,5 +9,4 @@ edition = "2018"
 [dependencies]
 cp866-rs = { git = "https://github.com/madwareru/cp866-rs", version = "0.1.2"}
 bin-serialization-rs = { git = "https://github.com/madwareru/bin-serialization-rs", version = "0.1.3"}
-rom-res-rs = { git = "https://github.com/madwareru/rom-res-rs", version = "0.1.1"}
 regex = "1.3.9"

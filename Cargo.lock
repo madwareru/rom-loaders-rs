@@ -59,15 +59,6 @@ dependencies = [
  "bin-serialization-rs",
  "cp866-rs",
  "regex",
- "rom-res-rs",
-]
-
-[[package]]
-name = "rom-res-rs"
-version = "0.1.1"
-source = "git+https://github.com/madwareru/rom-res-rs#8422e4f750a72b588fc8826e34579245d97a113c"
-dependencies = [
- "cp866-rs",
 ]
 
 [[package]]
