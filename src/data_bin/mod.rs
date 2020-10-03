@@ -52,27 +52,35 @@ impl DataBinContent {
 
             match &header_buffer[3..8] {
                 [b'S', b'h', b'a', b'p', b'e'] => {
+                    stream.seek(SeekFrom::Current(ShapeSection::HEADER_SIZE));
                     shape_section = Some(ShapeSection::read(stream))
                 }
                 [b'P', b'a', b'r', b'a', b'm'] => {
+                    stream.seek(SeekFrom::Current(ParameterSection::HEADER_SIZE));
                     parameter_section = Some(ParameterSection::read(stream))
                 }
                 [b'I', b't', b'e', b'm', _   ] => {
+                    stream.seek(SeekFrom::Current(ItemSection::HEADER_SIZE));
                     item_section = Some(ItemSection::read(stream))
                 }
                 [b'M', b'a', b'g', b'i', b'c'] => {
+                    stream.seek(SeekFrom::Current(MagicItemSection::HEADER_SIZE));
                     magic_item_section = Some(MagicItemSection::read(stream))
                 }
                 [b'U', b'n', b'i', b't', _   ] => {
+                    stream.seek(SeekFrom::Current(UnitSection::HEADER_SIZE));
                     unit_section = Some(UnitSection::read(stream))
                 }
                 [b'H', b'u', b'm', b'a', b'n'] => {
+                    stream.seek(SeekFrom::Current(HumanSection::HEADER_SIZE));
                     human_section = Some(HumanSection::read(stream))
                 }
                 [b'B', b'u', b'i', b'l', b'd'] => {
+                    stream.seek(SeekFrom::Current(StructureSection::HEADER_SIZE));
                     structure_section = Some(StructureSection::read(stream))
                 }
                 [b'S', b'p', b'e', b'l', b'l'] => {
+                    stream.seek(SeekFrom::Current(SpellSection::HEADER_SIZE));
                     spell_section = Some(SpellSection::read(stream))
                 }
                 _ => unreachable!()
