@@ -94,7 +94,7 @@ impl WavContent {
         let data_size = (data_header.size / 2) as usize;
         let mut data = Vec::with_capacity(data_size);
         for _ in 0..data_size {
-            let sample = U16Wrapper::deserialize(stream)?;
+            let sample = U16Wrapper::deserialize(stream, Endianness::LittleEndian)?;
             data.push(*sample);
         }
         Ok(WavContent {
