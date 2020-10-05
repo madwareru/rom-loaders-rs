@@ -1,5 +1,5 @@
 use bin_serialization_rs::{Reflectable, SerializationReflector, Endianness};
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, SeekFrom};
 use crate::shared_types::U16Wrapper;
 
 const RIFF: u32 = 0x46_46_49_52;
@@ -29,9 +29,23 @@ impl Reflectable for RiffHeader {
 }
 
 #[derive(Clone, Default)]
-pub struct FmtChunk {
+pub struct ChunkHeader {
     signature: u32,
-    size: u32,
+    size: u32
+}
+impl Reflectable for ChunkHeader {
+    fn reflect<TSerializationReflector: SerializationReflector>(
+        &mut self, reflector:
+        &mut TSerializationReflector
+    ) -> std::io::Result<()> {
+        reflector.reflect_u32(&mut self.signature)?;
+        reflector.reflect_u32(&mut self.size)
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct FmtChunk {
+    header: ChunkHeader,
     pub format: u16,
     pub channels: u16,
     pub sampling_rate: u32,
@@ -44,50 +58,34 @@ impl Reflectable for FmtChunk {
         &mut self, reflector:
         &mut TSerializationReflector
     ) -> std::io::Result<()> {
-        reflector.reflect_u32(&mut self.signature)?;
-        reflector.reflect_u32(&mut self.size)?;
+        reflector.reflect_composite(&mut self.header)?;
         reflector.reflect_u16(&mut self.format)?;
         reflector.reflect_u16(&mut self.channels)?;
         reflector.reflect_u32(&mut self.sampling_rate)?;
         reflector.reflect_u32(&mut self.data_rate)?;
         reflector.reflect_u16(&mut self.bytes_per_sample)?;
         reflector.reflect_u16(&mut self.bits_per_sample)?;
-        assert_eq!(self.signature, FMT);
-        assert_eq!(self.size, 0x10);
+        assert_eq!(self.header.signature, FMT);
+        assert_eq!(self.header.size, 0x10);
         assert_eq!(self.format, PCM);
         Ok(())
     }
 }
 
 #[derive(Clone, Default)]
-pub struct DataChunk {
-    signature: u32,
-    size: u32
-}
-impl Reflectable for DataChunk {
-    fn reflect<TSerializationReflector: SerializationReflector>(
-        &mut self, reflector:
-        &mut TSerializationReflector
-    ) -> std::io::Result<()> {
-        reflector.reflect_u32(&mut self.signature)?;
-        reflector.reflect_u32(&mut self.size)?;
-        assert_eq!(self.signature, DATA);
-        Ok(())
-    }
-}
-
-#[derive(Clone, Default)]
 pub struct WavContent {
-    riff_header: RiffHeader,
     pub fmt: FmtChunk,
-    data_header: DataChunk,
     pub data: Vec<u16>
 }
 impl WavContent {
     pub fn read<Stream: Read+Seek>(stream: &mut Stream) -> std::io::Result<Self> {
-        let riff_header = RiffHeader::deserialize(stream, Endianness::LittleEndian)?;
+        let _riff_header = RiffHeader::deserialize(stream, Endianness::LittleEndian)?;
         let fmt = FmtChunk::deserialize(stream, Endianness::LittleEndian)?;
-        let data_header = DataChunk::deserialize(stream, Endianness::LittleEndian)?;
+        let mut data_header = ChunkHeader::deserialize(stream, Endianness::LittleEndian)?;
+        while data_header.signature != DATA {
+            stream.seek(SeekFrom::Current(data_header.size as i64))?;
+            data_header = ChunkHeader::deserialize(stream, Endianness::LittleEndian)?;
+        }
         let data_size = (data_header.size / 2) as usize;
         let mut data = Vec::with_capacity(data_size);
         for _ in 0..data_size {
@@ -95,9 +93,7 @@ impl WavContent {
             data.push(*sample);
         }
         Ok(WavContent {
-            riff_header,
             fmt,
-            data_header,
             data
         })
     }
