@@ -55,9 +55,6 @@ impl Reflectable for FmtChunk {
         assert_eq!(self.signature, FMT);
         assert_eq!(self.size, 0x10);
         assert_eq!(self.format, PCM);
-        assert_eq!(self.sampling_rate * self.bytes_per_sample as u32, self.data_rate);
-        assert_eq!(self.data_rate, 44100);
-        assert_eq!(self.bits_per_sample, 16);
         Ok(())
     }
 }
