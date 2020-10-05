@@ -91,7 +91,7 @@ impl WavContent {
         let riff_header = RiffHeader::deserialize(stream, Endianness::LittleEndian)?;
         let fmt = FmtChunk::deserialize(stream, Endianness::LittleEndian)?;
         let data_header = DataChunk::deserialize(stream, Endianness::LittleEndian)?;
-        let data_size = (data_header.size / 2) as usize;
+        let data_size = data_header.size as usize;
         let mut data = Vec::with_capacity(data_size);
         for _ in 0..data_size {
             let sample = U16Wrapper::deserialize(stream, Endianness::LittleEndian)?;
