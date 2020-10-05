@@ -34,9 +34,9 @@ pub struct FmtChunk {
     size: u32,
     pub format: u16,
     pub channels: u16,
-    pub blocks_per_sec: u32,
     pub sampling_rate: u32,
-    pub block_align: u16,
+    pub data_rate: u32,
+    pub bytes_per_sample: u16,
     pub bits_per_sample: u16
 }
 impl Reflectable for FmtChunk {
@@ -48,15 +48,15 @@ impl Reflectable for FmtChunk {
         reflector.reflect_u32(&mut self.size)?;
         reflector.reflect_u16(&mut self.format)?;
         reflector.reflect_u16(&mut self.channels)?;
-        reflector.reflect_u32(&mut self.blocks_per_sec)?;
         reflector.reflect_u32(&mut self.sampling_rate)?;
-        reflector.reflect_u16(&mut self.block_align)?;
+        reflector.reflect_u32(&mut self.data_rate)?;
+        reflector.reflect_u16(&mut self.bytes_per_sample)?;
         reflector.reflect_u16(&mut self.bits_per_sample)?;
         assert_eq!(self.signature, FMT);
         assert_eq!(self.size, 0x10);
         assert_eq!(self.format, PCM);
-        assert_eq!(self.blocks_per_sec * self.block_align as u32, self.sampling_rate);
-        assert_eq!(self.sampling_rate, 44100);
+        assert_eq!(self.sampling_rate * self.bytes_per_sample as u32, self.data_rate);
+        assert_eq!(self.data_rate, 44100);
         assert_eq!(self.bits_per_sample, 16);
         Ok(())
     }
