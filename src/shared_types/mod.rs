@@ -24,7 +24,7 @@ impl Deref for CP866String {
 }
 
 #[derive(Default, Clone, PartialEq)]
-pub struct U32Wrapper(u32);
+pub struct U32Wrapper(pub u32);
 impl Reflectable for U32Wrapper {
     fn reflect<TSerializationReflector: SerializationReflector>(
         &mut self,
@@ -46,7 +46,7 @@ impl Deref for U32Wrapper {
 }
 
 #[derive(Default, Clone, PartialEq)]
-pub struct U16Wrapper(u16);
+pub struct U16Wrapper(pub u16);
 impl Reflectable for U16Wrapper {
     fn reflect<TSerializationReflector: SerializationReflector>(
         &mut self,
@@ -68,7 +68,7 @@ impl Deref for U16Wrapper {
 }
 
 #[derive(Default, Clone, PartialEq)]
-pub struct U8Wrapper(u8);
+pub struct U8Wrapper(pub u8);
 impl Reflectable for U8Wrapper {
     fn reflect<TSerializationReflector: SerializationReflector>(
         &mut self,
