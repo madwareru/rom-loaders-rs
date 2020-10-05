@@ -2,6 +2,7 @@ pub mod data_bin;
 pub mod regfile;
 pub mod images;
 pub mod shared_types;
+pub mod multimedia;
 mod stream_utils;
 
 #[cfg(test)]
