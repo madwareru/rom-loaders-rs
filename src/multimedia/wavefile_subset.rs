@@ -1,6 +1,6 @@
 use bin_serialization_rs::{Reflectable, SerializationReflector, Endianness};
 use std::io::{Read, Seek, SeekFrom, Write};
-use crate::shared_types::U16Wrapper;
+use crate::shared_types::{I16Wrapper};
 
 const RIFF: u32 = 0x46_46_49_52;
 const WAVE: u32 = 0x45_56_41_57;
@@ -83,7 +83,7 @@ impl Default for FmtChunk {
 #[derive(Clone, Default)]
 pub struct WavContent {
     pub fmt: FmtChunk,
-    pub data: Vec<u16>
+    pub data: Vec<i16>
 }
 impl WavContent {
     pub fn read<Stream: Read+Seek>(stream: &mut Stream) -> std::io::Result<Self> {
@@ -100,7 +100,7 @@ impl WavContent {
         let data_size = (data_header.size / 2) as usize;
         let mut data = Vec::with_capacity(data_size);
         for _ in 0..data_size {
-            let sample = U16Wrapper::deserialize(stream, Endianness::LittleEndian)?;
+            let sample = I16Wrapper::deserialize(stream, Endianness::LittleEndian)?;
             data.push(*sample);
         }
         Ok(WavContent {
@@ -130,7 +130,7 @@ impl WavContent {
         };
         data_header.serialize(stream, Endianness::LittleEndian)?;
         for i in 0..self.data.len() {
-            let mut w = U16Wrapper(self.data[i]);
+            let mut w = I16Wrapper(self.data[i]);
             w.serialize(stream, Endianness::LittleEndian)?;
         }
         Ok(())
