@@ -49,7 +49,7 @@ impl<'a, TStream : Read> BitReader<'a, TStream> {
     }
 }
 
-pub fn with_bit_reader<F, TStream: Read>(stream: &mut TStream, exec_action: F) -> std::io::Result<()>
+pub fn with_bit_reader<F, TStream: Read>(stream: &mut TStream, mut exec_action: F) -> std::io::Result<()>
     where F: FnMut(&mut BitReader<TStream>) -> std::io::Result<()> {
     let mut reader = BitReader::from_stream(stream);
     exec_action(&mut reader)

@@ -1,3 +1,7 @@
 mod bit_reader;
 mod huffman;
-mod smacker_file;
+mod file;
+mod header;
+mod decode_context;
+mod frame;
+mod flags;

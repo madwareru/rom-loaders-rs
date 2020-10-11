@@ -225,7 +225,7 @@ pub struct HeaderTree {
     tree: HuffmanContext
 }
 impl HeaderTree {
-    pub(crate) fn new<TStream: Read>(
+    pub(crate) fn read<TStream: Read>(
         bit_reader: &mut BitReader<TStream>,
         size: usize
     ) -> std::io::Result<Self> {
