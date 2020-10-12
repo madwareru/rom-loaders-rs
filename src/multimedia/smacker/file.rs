@@ -244,7 +244,7 @@ impl SmackerFileInfo {
                         let b = PALETTE_MAP_TABLE[(flag_byte & 0x3F) as usize];
 
                         next_palette[pal_offset] =
-                            0xFF_000000 + r as u32 + g as u32 * 0x100 + b as u32 * 0x10000;
+                            0xFF_000000 + b as u32 + g as u32 * 0x100 + r as u32 * 0x10000;
                         pal_offset += 1;
                     }
                 }
