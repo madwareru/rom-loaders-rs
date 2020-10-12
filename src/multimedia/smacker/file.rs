@@ -56,6 +56,7 @@ pub struct SmackerFileInfo {
     pub width: u32,
     pub height: u32,
     pub frame_interval: f32,
+    pub sample_rate_per_frame: usize,
     pub audio_rate: [u32; 7],
     pub audio_flags: [flags::Audio; 7],
     pub audio_tracks: Vec<Vec<f32>>,
@@ -147,6 +148,7 @@ impl SmackerFileInfo {
         for i in 0..7 {
             audio_tracks[i].reserve(header.audio_size[i] as usize);
         }
+        let sample_rate_per_frame = (audio_rate[0] as f32 * frame_interval / 1000.0).trunc() as usize;
 
         Ok(
             (
@@ -163,6 +165,7 @@ impl SmackerFileInfo {
                     audio_rate,
                     audio_flags,
                     audio_tracks,
+                    sample_rate_per_frame,
                     buffer
                 },
                 FrameBytesShared{
@@ -172,16 +175,17 @@ impl SmackerFileInfo {
         )
     }
 
-    fn unpack(&mut self, frame_bytes_shared: &FrameBytesShared, frame_id: usize, unpack_video: bool) -> std::io::Result<()> {
+    fn unpack(&mut self, frame_bytes_shared: &FrameBytesShared, frame_id: usize, skip_video: bool, skip_audio: bool) -> std::io::Result<()> {
         let frame_bytes = frame_bytes_shared.get_slice(self.frames[frame_id].frame_range.clone());
-        self.unpack_impl(frame_id, frame_bytes, unpack_video)
+        self.unpack_impl(frame_id, frame_bytes, skip_video, skip_audio)
     }
 
     fn unpack_impl(
         &mut self,
         frame_id: usize,
         frame_bytes: &[u8],
-        unpack_video: bool
+        skip_video: bool,
+        skip_audio: bool
     ) -> std::io::Result<()> {
         let frame = self.frames[frame_id].clone();
         if let Some(m_map_tree) = &mut self.m_map_tree {
@@ -205,7 +209,7 @@ impl SmackerFileInfo {
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_PALETTE) {
             let palette_size = U8Wrapper::deserialize(&mut stream, Endianness::LittleEndian)?;
             let palette_size = (palette_size.0 as usize) * 4 - 1;
-            if unpack_video {
+            if !skip_video {
                 let pal_colors_buffer = &mut self.buffer[..palette_size];
                 stream.read(pal_colors_buffer)?;
                 let prev_palette = &self.smacker_decode_context.palette;
@@ -245,27 +249,27 @@ impl SmackerFileInfo {
             }
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_1) {
-            self.unpack_audio(&mut stream, frame_id, 0)?;
+            self.unpack_audio(&mut stream, frame_id, 0, skip_audio)?;
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_2) {
-            self.unpack_audio(&mut stream, frame_id, 1)?;
+            self.unpack_audio(&mut stream, frame_id, 1, skip_audio)?;
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_3) {
-            self.unpack_audio(&mut stream, frame_id, 2)?;
+            self.unpack_audio(&mut stream, frame_id, 2, skip_audio)?;
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_4) {
-            self.unpack_audio(&mut stream, frame_id, 3)?;
+            self.unpack_audio(&mut stream, frame_id, 3, skip_audio)?;
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_5) {
-            self.unpack_audio(&mut stream, frame_id, 4)?;
+            self.unpack_audio(&mut stream, frame_id, 4, skip_audio)?;
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_6) {
-            self.unpack_audio(&mut stream, frame_id, 5)?;
+            self.unpack_audio(&mut stream, frame_id, 5, skip_audio)?;
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_7) {
-            self.unpack_audio(&mut stream, frame_id, 6)?;
+            self.unpack_audio(&mut stream, frame_id, 6, skip_audio)?;
         }
-        if unpack_video {
+        if !skip_video {
             self.unpack_video(&mut stream)?;
         }
         Ok(())
@@ -275,14 +279,20 @@ impl SmackerFileInfo {
         &mut self,
         stream: &mut Cursor<&[u8]>,
         frame_id: usize,
-        track_number: usize
+        track_number: usize,
+        skip_audio: bool,
     ) -> std::io::Result<()> {
-        let _stream = stream;
         let _frame_id = frame_id;
         if !self.audio_flags[track_number].contains(flags::Audio::PRESENT) {
             return Ok(())
         }
-        unimplemented!()
+        let audio_length = U32Wrapper::deserialize(stream, Endianness::LittleEndian)?;
+        if skip_audio {
+            stream.seek(SeekFrom::Current(audio_length.0 as i64))?;
+            Ok(())
+        } else {
+            unimplemented!()
+        }
     }
 
     fn unpack_video(
@@ -403,7 +413,7 @@ impl SmackerFile {
         let (file_info, frame_bytes_shared) = SmackerFileInfo::load(stream)?;
         Ok(Self{ file_info, frame_bytes_shared })
     }
-    pub fn unpack(&mut self, frame_id: usize, unpack_video: bool) -> std::io::Result<()> {
-        self.file_info.unpack(&self.frame_bytes_shared, frame_id, unpack_video)
+    pub fn unpack(&mut self, frame_id: usize, skip_video: bool, skip_audio: bool) -> std::io::Result<()> {
+        self.file_info.unpack(&self.frame_bytes_shared, frame_id, skip_video, skip_audio)
     }
 }
