@@ -43,10 +43,10 @@ pub struct SmackerFile {
     pub width: u32,
     pub height: u32,
     pub frame_interval: i32,
-    pub m_map_tree: Option<HeaderTree>,
-    pub m_clr_tree: Option<HeaderTree>,
-    pub full_tree: Option<HeaderTree>,
-    pub type_tree: Option<HeaderTree>,
+    m_map_tree: Option<HeaderTree>,
+    m_clr_tree: Option<HeaderTree>,
+    full_tree: Option<HeaderTree>,
+    type_tree: Option<HeaderTree>,
     pub smacker_decode_context: SmackerDecodeContext,
     pub frames: Vec<SmackerFrame>,
     buffer: Vec<u8>
@@ -233,6 +233,9 @@ impl SmackerFile {
         frame: &SmackerFrame,
         track_number: usize
     ) -> std::io::Result<()> {
+        if !frame.audio_flags[track_number].contains(flags::Audio::PRESENT) {
+            return Ok(())
+        }
         unimplemented!()
     }
 
