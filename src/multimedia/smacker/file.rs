@@ -288,7 +288,7 @@ impl SmackerFileInfo {
         }
         let audio_length = U32Wrapper::deserialize(stream, Endianness::LittleEndian)?;
         if skip_audio {
-            stream.seek(SeekFrom::Current(audio_length.0 as i64))?;
+            stream.seek(SeekFrom::Current(audio_length.0 as i64 - 4))?;
             Ok(())
         } else {
             unimplemented!()
