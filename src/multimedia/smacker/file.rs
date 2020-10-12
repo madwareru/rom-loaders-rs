@@ -42,7 +42,7 @@ use crate::multimedia::smacker::flags::Audio;
 pub struct SmackerFile {
     pub width: u32,
     pub height: u32,
-    pub frame_interval: i32,
+    pub frame_interval: f32,
     m_map_tree: Option<HeaderTree>,
     m_clr_tree: Option<HeaderTree>,
     full_tree: Option<HeaderTree>,
@@ -55,9 +55,9 @@ impl SmackerFile {
     pub fn load(stream: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
         let header = SmackerFileHeader::deserialize(stream, Endianness::LittleEndian)?;
         let frame_interval = match header.frame_rate.cmp(&0) {
-            Ordering::Less => -header.frame_rate / 100,
-            Ordering::Equal => 100,
-            Ordering::Greater => header.frame_rate
+            Ordering::Less => -header.frame_rate as f32 / 100.0,
+            Ordering::Equal => 100.0,
+            Ordering::Greater => header.frame_rate as f32
         };
         let mut audio_flags = [Default::default(); 7];
         let mut audio_rate = header.audio_rate.clone();
