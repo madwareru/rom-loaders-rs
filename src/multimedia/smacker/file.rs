@@ -70,7 +70,12 @@ pub struct SmackerFileInfo {
 }
 impl SmackerFileInfo {
     fn load(stream: &mut Cursor<&[u8]>) -> std::io::Result<(Self, FrameBytesShared)> {
-        let header = SmackerFileHeader::deserialize(stream, Endianness::LittleEndian)?;
+        let mut header = SmackerFileHeader::deserialize(stream, Endianness::LittleEndian)?;
+        let header_flags = flags::Header::from_bits(header.header_flags as u8).unwrap();
+        if header_flags.contains(flags::Header::HAS_RING_FRAME) {
+            header.num_frames += 1;
+        }
+
         let frame_interval = match header.frame_rate.cmp(&0) {
             Ordering::Less => -header.frame_rate as f32 / 100.0,
             Ordering::Equal => 100.0,
