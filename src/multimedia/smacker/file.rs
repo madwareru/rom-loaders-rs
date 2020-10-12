@@ -322,13 +322,11 @@ impl SmackerFileInfo {
                                 (current_block % width_blocks) * 4,
                                 (current_block / width_blocks) * 4
                             );
-                            let mut offset = y * self.width as usize;
-                            for _ in 0..4 {
-                                let sub_offset = offset + x;
-                                for j in sub_offset..sub_offset+4 {
-                                    self.smacker_decode_context.image[j] = extra;
+                            for j in y..y+4 {
+                                let stride = j * self.width as usize;
+                                for i in x..x+4 {
+                                    self.smacker_decode_context.image[stride + i] = extra;
                                 }
-                                offset += self.width as usize;
                             }
                             current_block += 1;
                         }
@@ -342,7 +340,7 @@ impl SmackerFileInfo {
                                         (color_idx_pair & 0xFF) as u8,
                                         (color_idx_pair / 0x100) as u8,
                                     ]
-                                }
+                                },
                                 None => unreachable!()
                             };
                             let mut pix_kind_lookup = self.m_map_tree.as_mut()
@@ -353,15 +351,13 @@ impl SmackerFileInfo {
                                 (current_block % width_blocks) * 4,
                                 (current_block / width_blocks) * 4
                             );
-                            let mut offset = y * self.width as usize;
-                            for _ in 0..4 {
-                                let sub_offset = offset + x;
-                                for j in sub_offset..sub_offset+4 {
+                            for j in y..y+4 {
+                                let stride = j * self.width as usize;
+                                for i in x..x+4 {
                                     let kind = (pix_kind_lookup & 0b1) as usize;
                                     pix_kind_lookup >>= 1;
-                                    self.smacker_decode_context.image[j] = color_indices[kind];
+                                    self.smacker_decode_context.image[stride + i] = color_indices[kind];
                                 }
-                                offset += self.width as usize;
                             }
                             current_block += 1;
                         }
@@ -372,8 +368,8 @@ impl SmackerFileInfo {
                                 (current_block % width_blocks) * 4,
                                 (current_block / width_blocks) * 4
                             );
-                            let mut offset = y * self.width as usize;
-                            for _ in 0..4 {
+                            for j in y..y+4 {
+                                let stride = j * self.width as usize;
                                 let color_indices = match self.full_tree.as_mut() {
                                     Some(tree) => {
                                         let color_idx_pair1 = tree.get_value(bit_reader)? as u16;
@@ -387,14 +383,9 @@ impl SmackerFileInfo {
                                     }
                                     _ => unreachable!()
                                 };
-                                let sub_offset = offset + x;
-                                for j in 0..4 {
-                                    let idx = sub_offset+j;
-                                    if idx < self.smacker_decode_context.image.len() {
-                                        self.smacker_decode_context.image[idx] = color_indices[j];
-                                    }
+                                for i in 0..4 {
+                                    self.smacker_decode_context.image[x + stride + i] = color_indices[i];
                                 }
-                                offset += self.width as usize;
                             }
                             current_block += 1;
                         }
