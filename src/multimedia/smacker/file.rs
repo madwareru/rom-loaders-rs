@@ -9,13 +9,19 @@ use {
     },
     crate::shared_types::{U32Wrapper, U8Wrapper},
     bin_serialization_rs::{Reflectable, Endianness},
+    bitflags::_core::ops::Range,
     std::{
         io::{Read, Seek, Cursor, SeekFrom},
         cmp::Ordering
     }
 };
 
-const BLOCK_SIZE_TABLE: &[u32] = &[
+const BLOCK_MONOCHROME: u16 = 0;
+const BLOCK_FULL: u16 = 1;
+const BLOCK_VOID: u16 = 2;
+const BLOCK_SOLID: u16 = 3;
+
+const BLOCK_SIZE_TABLE: &[usize] = &[
     0x001, 0x002, 0x003, 0x004, 0x005, 0x006, 0x007, 0x008,
     0x009, 0x00A, 0x00B, 0x00C, 0x00D, 0x00E, 0x00F, 0x010,
     0x011, 0x012, 0x013, 0x014, 0x015, 0x016, 0x017, 0x018,
@@ -36,9 +42,6 @@ const PALETTE_MAP_TABLE: &[u32] = &[
     0xC3, 0xC7, 0xCB, 0xCF, 0xD3, 0xD7, 0xDB, 0xDF,
     0xE3, 0xE7, 0xEB, 0xEF, 0xF3, 0xF7, 0xFB, 0xFF
 ];
-
-use crate::multimedia::smacker::flags::Audio;
-use bitflags::_core::ops::Range;
 
 struct FrameBytesShared {
     data: Vec<u8>
@@ -118,7 +121,7 @@ impl SmackerFileInfo {
         let mut frame_bytes_shared = Vec::new();
         let mut frames: Vec<SmackerFrameInfo> = Vec::with_capacity(num_frames);
         for i in 0..num_frames {
-            let mut frame_bytes = &mut buffer[..frame_sizes[i] as usize];
+            let frame_bytes = &mut buffer[..frame_sizes[i] as usize];
             stream.read(frame_bytes)?;
 
             let prev_len = frame_bytes_shared.len();
@@ -187,11 +190,11 @@ impl SmackerFileInfo {
             let palette_size = U8Wrapper::deserialize(&mut stream, Endianness::LittleEndian)?;
             let palette_size = (palette_size.0 as usize) * 4 - 1;
             if unpack_video {
-                let mut pal_colors_buffer = &mut self.buffer[..palette_size];
+                let pal_colors_buffer = &mut self.buffer[..palette_size];
                 stream.read(pal_colors_buffer)?;
                 let prev_palette = &self.smacker_decode_context.palette;
                 let mut next_palette = prev_palette.clone();
-                let (mut offset, mut pal_offset, mut prev_pal_offset) = (0, 0, 0);
+                let (mut offset, mut pal_offset) = (0, 0);
                 while offset < pal_colors_buffer.len() && pal_offset < 256 {
                     let flag_byte = pal_colors_buffer[offset];
                     offset += 1;
@@ -199,14 +202,13 @@ impl SmackerFileInfo {
                         let increment = ((flag_byte & 0x7F) + 1) as usize;
                         pal_offset += increment;
                     } else if (flag_byte & 0xC0) == 0x40 {
-                        prev_pal_offset = pal_colors_buffer[offset] as usize;
+                        let prev_pal_offset = pal_colors_buffer[offset] as usize;
                         offset += 1;
                         let increment = ((flag_byte & 0x3F) + 1) as usize;
                         for i in 0..increment {
                             next_palette[pal_offset + i] = prev_palette[prev_pal_offset + i]
                         }
                         pal_offset += increment;
-                        prev_pal_offset += increment;
                     } else {
                         let r = PALETTE_MAP_TABLE[(flag_byte & 0x3F) as usize];
                         let flag_byte = pal_colors_buffer[offset];
@@ -248,7 +250,7 @@ impl SmackerFileInfo {
             self.unpack_audio(&mut stream, frame_id, 6)?;
         }
         if unpack_video {
-            self.unpack_video(&mut stream, frame_id)?;
+            self.unpack_video(&mut stream)?;
         }
         Ok(())
     }
@@ -259,6 +261,8 @@ impl SmackerFileInfo {
         frame_id: usize,
         track_number: usize
     ) -> std::io::Result<()> {
+        let _stream = stream;
+        let _frame_id = frame_id;
         if !self.audio_flags[track_number].contains(flags::Audio::PRESENT) {
             return Ok(())
         }
@@ -267,10 +271,110 @@ impl SmackerFileInfo {
 
     fn unpack_video(
         &mut self,
-        stream: &mut Cursor<&[u8]>,
-        frame_id: usize,
+        stream: &mut Cursor<&[u8]>
     ) -> std::io::Result<()> {
-        unimplemented!()
+        let width_blocks = (self.width / 4) as usize;
+        let height_blocks = (self.height / 4) as usize;
+        let count_blocks = width_blocks * height_blocks;
+        with_bit_reader(stream, |bit_reader| {
+            let mut current_block = 0;
+            while current_block < count_blocks {
+                let mut type_descriptor = self.type_tree.as_mut()
+                    .unwrap()
+                    .get_value(bit_reader)? as u16;
+
+                let block_type = type_descriptor & 0b11;
+                type_descriptor >>= 2;
+                let chain_length_idx = (type_descriptor & 0b111111) as usize;
+                let chain_length = BLOCK_SIZE_TABLE[chain_length_idx];
+                let extra = (type_descriptor >> 6) as u8;
+                match block_type {
+                    BLOCK_VOID => { current_block += chain_length },
+                    BLOCK_SOLID => {
+                        for _ in 0..chain_length {
+                            let (x, y) = (
+                                (current_block % width_blocks) * 4,
+                                (current_block / width_blocks) * 4
+                            );
+                            let mut offset = y * self.width as usize;
+                            for _ in 0..4 {
+                                let sub_offset = offset + x;
+                                for j in sub_offset..sub_offset+4 {
+                                    self.smacker_decode_context.image[j] = extra;
+                                }
+                                offset += self.width as usize;
+                            }
+                            current_block += 1;
+                        }
+                    },
+                    BLOCK_MONOCHROME => {
+                        for _ in 0..chain_length {
+                            let color_indices = match self.m_clr_tree.as_mut() {
+                                Some(tree) => {
+                                    let color_idx_pair = tree.get_value(bit_reader)? as u16;
+                                    [
+                                        (color_idx_pair & 0xFF) as u8,
+                                        (color_idx_pair / 0x100) as u8,
+                                    ]
+                                }
+                                None => unreachable!()
+                            };
+                            let mut pix_kind_lookup = self.m_map_tree.as_mut()
+                                .unwrap()
+                                .get_value(bit_reader)?;
+
+                            let (x, y) = (
+                                (current_block % width_blocks) * 4,
+                                (current_block / width_blocks) * 4
+                            );
+                            let mut offset = y * self.width as usize;
+                            for _ in 0..4 {
+                                let sub_offset = offset + x;
+                                for j in sub_offset..sub_offset+4 {
+                                    let kind = (pix_kind_lookup & 0b1) as usize;
+                                    pix_kind_lookup >>= 1;
+                                    self.smacker_decode_context.image[j] = color_indices[kind];
+                                }
+                                offset += self.width as usize;
+                            }
+                            current_block += 1;
+                        }
+                    }
+                    BLOCK_FULL => {
+                        for _ in 0..chain_length {
+                            let (x, y) = (
+                                (current_block % width_blocks) * 4,
+                                (current_block / width_blocks) * 4
+                            );
+                            let mut offset = y * self.width as usize;
+                            for _ in 0..4 {
+                                let color_indices = match self.full_tree.as_mut() {
+                                    Some(tree) => {
+                                        let color_idx_pair1 = tree.get_value(bit_reader)? as u16;
+                                        let color_idx_pair0 = tree.get_value(bit_reader)? as u16;
+                                        [
+                                            (color_idx_pair0 & 0xFF) as u8,
+                                            (color_idx_pair0 / 0x100) as u8,
+                                            (color_idx_pair1 & 0xFF) as u8,
+                                            (color_idx_pair1 / 0x100) as u8,
+                                        ]
+                                    }
+                                    _ => unreachable!()
+                                };
+                                let sub_offset = offset + x;
+                                for j in 0..4 {
+                                    self.smacker_decode_context.image[sub_offset+j] = color_indices[j];
+                                }
+                                offset += self.width as usize;
+                            }
+                            current_block += 1;
+                        }
+                    },
+                    _ => unreachable!()
+                }
+            }
+            Ok(())
+        })
     }
 }
 

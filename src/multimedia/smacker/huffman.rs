@@ -30,17 +30,15 @@ impl Default for HuffmanNode {
 
 pub struct HuffmanContext {
     node_arena: Vec<HuffmanNode>,
-    depth: usize,
     root_node_id: NodeId
 }
 impl HuffmanContext {
-    fn new(depth: usize) -> Self {
+    fn new() -> Self {
         let mut node_arena = Vec::new();
         let root_node_id = NodeId(node_arena.len());
         node_arena.push(Default::default());
         Self {
             node_arena,
-            depth,
             root_node_id
         }
     }
@@ -70,7 +68,7 @@ impl HuffmanContext {
         bit_reader: &mut BitReader<TStream>,
         max_depth: usize
     ) -> std::io::Result<Self> {
-        let mut context = HuffmanContext::new(max_depth);
+        let mut context = HuffmanContext::new();
         let root_node_id = context.root_node_id;
         Self::decode_tree(bit_reader, max_depth, &mut context, root_node_id, 0)?;
         Ok(context)
@@ -102,7 +100,7 @@ impl HuffmanContext {
             Ok(())
         } else {
             context.node_arena[node_id.0] = {
-                let mut left_child = HuffmanNode::Leaf {
+                let left_child = HuffmanNode::Leaf {
                     bit_count: bit_count + 1,
                     code: (code << 1) | 0x1,
                     value: 0
@@ -110,7 +108,7 @@ impl HuffmanContext {
                 let left_node_id = NodeId(context.node_arena.len());
                 context.node_arena.push(left_child);
 
-                let mut right_child = HuffmanNode::Leaf {
+                let right_child = HuffmanNode::Leaf {
                     bit_count: bit_count + 1,
                     code: (code << 2) | 0x11,
                     value: 0
@@ -137,7 +135,7 @@ impl HuffmanContext {
         header_tree_head: &mut HeaderTreeHead,
         max_depth: usize,
     ) -> std::io::Result<Self> {
-        let mut context = HuffmanContext::new(max_depth);
+        let mut context = HuffmanContext::new();
         let root_node_id = context.root_node_id;
         Self::decode_big_tree(bit_reader, header_tree_head, max_depth, &mut context, root_node_id, 0)?;
         Ok(context)
@@ -185,7 +183,7 @@ impl HuffmanContext {
             Ok(())
         } else {
             context.node_arena[node_id.0] = {
-                let mut left_child = HuffmanNode::Leaf {
+                let left_child = HuffmanNode::Leaf {
                     bit_count: bit_count + 1,
                     code: (code << 1) | 0x1,
                     value: 0
@@ -193,7 +191,7 @@ impl HuffmanContext {
                 let left_node_id = NodeId(context.node_arena.len());
                 context.node_arena.push(left_child);
 
-                let mut right_child = HuffmanNode::Leaf {
+                let right_child = HuffmanNode::Leaf {
                     bit_count: bit_count + 1,
                     code: (code << 2) | 0x11,
                     value: 0
@@ -267,7 +265,7 @@ impl HeaderTree {
         })
     }
 
-    pub fn reset_last(&mut self) {
+    pub(crate) fn reset_last(&mut self) {
         for i in 0..3 {
             match self.head.last_nodes[i] {
                 None => {}
@@ -281,7 +279,7 @@ impl HeaderTree {
         }
     }
 
-    pub fn get_value<TStream: Read>(
+    pub(crate) fn get_value<TStream: Read>(
         &mut self,
         bit_reader: &mut BitReader<TStream>
     ) -> std::io::Result<usize> {
