@@ -315,8 +315,12 @@ impl SmackerFileInfo {
                 let chain_length = BLOCK_SIZE_TABLE[chain_length_idx];
                 let extra = (type_descriptor >> 6) as u8;
                 match block_type {
-                    BLOCK_VOID => { current_block += chain_length },
+                    BLOCK_VOID => {
+                        current_block += chain_length;
+                        println!("found void, skip chain with len: {}", chain_length);
+                    },
                     BLOCK_SOLID => {
+                        println!("found solid, draw chain with len: {}", chain_length);
                         for _ in 0..chain_length {
                             let (x, y) = (
                                 (current_block % width_blocks) * 4,
@@ -332,6 +336,7 @@ impl SmackerFileInfo {
                         }
                     },
                     BLOCK_MONOCHROME => {
+                        println!("found mono, draw chain with len: {}", chain_length);
                         for _ in 0..chain_length {
                             let color_indices = match self.m_clr_tree.as_mut() {
                                 Some(tree) => {
@@ -363,6 +368,7 @@ impl SmackerFileInfo {
                         }
                     }
                     BLOCK_FULL => {
+                        println!("found full, draw chain with len: {}", chain_length);
                         for _ in 0..chain_length {
                             let (x, y) = (
                                 (current_block % width_blocks) * 4,
