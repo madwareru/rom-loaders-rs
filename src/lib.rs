@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate bitflags;
+
 pub mod data_bin;
 pub mod regfile;
 pub mod images;
