@@ -55,9 +55,9 @@ impl SmackerFile {
     pub fn load(stream: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
         let header = SmackerFileHeader::deserialize(stream, Endianness::LittleEndian)?;
         let frame_interval = match header.frame_rate.cmp(&0) {
-            Ordering::Less => header.frame_rate,
-            Ordering::Equal => -header.frame_rate / 100,
-            Ordering::Greater => 100
+            Ordering::Less => -header.frame_rate / 100,
+            Ordering::Equal => 100,
+            Ordering::Greater => header.frame_rate
         };
         let mut audio_flags = [Default::default(); 7];
         let mut audio_rate = header.audio_rate.clone();
