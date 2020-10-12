@@ -322,10 +322,8 @@ impl SmackerFileInfo {
                 match block_type {
                     BLOCK_VOID => {
                         current_block += chain_length;
-                        println!("found void, skip chain with len: {}", chain_length);
                     },
                     BLOCK_SOLID => {
-                        println!("found solid, draw chain with len: {}", chain_length);
                         for _ in 0..chain_length {
                             if current_block >= count_blocks {
                                 break;
@@ -344,7 +342,6 @@ impl SmackerFileInfo {
                         }
                     },
                     BLOCK_MONOCHROME => {
-                        println!("found mono, draw chain with len: {}", chain_length);
                         for _ in 0..chain_length {
                             if current_block >= count_blocks {
                                 break;
@@ -379,7 +376,6 @@ impl SmackerFileInfo {
                         }
                     }
                     BLOCK_FULL => {
-                        println!("found full, draw chain with len: {}", chain_length);
                         for _ in 0..chain_length {
                             if current_block >= count_blocks {
                                 break;
