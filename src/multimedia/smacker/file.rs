@@ -322,6 +322,9 @@ impl SmackerFileInfo {
                     BLOCK_SOLID => {
                         println!("found solid, draw chain with len: {}", chain_length);
                         for _ in 0..chain_length {
+                            if current_block >= count_blocks {
+                                break;
+                            }
                             let (x, y) = (
                                 (current_block % width_blocks) * 4,
                                 (current_block / width_blocks) * 4
@@ -338,6 +341,9 @@ impl SmackerFileInfo {
                     BLOCK_MONOCHROME => {
                         println!("found mono, draw chain with len: {}", chain_length);
                         for _ in 0..chain_length {
+                            if current_block >= count_blocks {
+                                break;
+                            }
                             let color_indices = match self.m_clr_tree.as_mut() {
                                 Some(tree) => {
                                     let color_idx_pair = tree.get_value(bit_reader)? as u16;
@@ -370,6 +376,9 @@ impl SmackerFileInfo {
                     BLOCK_FULL => {
                         println!("found full, draw chain with len: {}", chain_length);
                         for _ in 0..chain_length {
+                            if current_block >= count_blocks {
+                                break;
+                            }
                             let (x, y) = (
                                 (current_block % width_blocks) * 4,
                                 (current_block / width_blocks) * 4
