@@ -389,7 +389,10 @@ impl SmackerFileInfo {
                                 };
                                 let sub_offset = offset + x;
                                 for j in 0..4 {
-                                    self.smacker_decode_context.image[sub_offset+j] = color_indices[j];
+                                    let idx = sub_offset+j;
+                                    if idx < self.smacker_decode_context.image.len() {
+                                        self.smacker_decode_context.image[idx] = color_indices[j];
+                                    }
                                 }
                                 offset += self.width as usize;
                             }
