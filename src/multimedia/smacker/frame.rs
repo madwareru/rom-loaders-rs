@@ -1,9 +1,9 @@
 use super::*;
+use bitflags::_core::ops::Range;
 
-pub struct SmackerFrame {
-    pub frame_bytes: Vec<u8>,
+#[derive(Clone, Debug)]
+pub struct SmackerFrameInfo {
+    pub frame_range: Range<usize>,
     pub frame_flags: flags::Frame,
     pub frame_feature_flags: flags::FrameFeature,
-    pub audio_flags: [flags::Audio; 7],
-    pub audio_rate: [u32; 7]
 }

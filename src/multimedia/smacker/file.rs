@@ -3,7 +3,7 @@ use {
         huffman::HeaderTree,
         header::SmackerFileHeader,
         decode_context::SmackerDecodeContext,
-        frame::SmackerFrame,
+        frame::SmackerFrameInfo,
         bit_reader::with_bit_reader,
         *
     },
@@ -38,21 +38,33 @@ const PALETTE_MAP_TABLE: &[u32] = &[
 ];
 
 use crate::multimedia::smacker::flags::Audio;
+use bitflags::_core::ops::Range;
 
-pub struct SmackerFile {
+struct FrameBytesShared {
+    data: Vec<u8>
+}
+impl FrameBytesShared {
+    fn get_slice(&self, range: Range<usize>) -> &[u8] {
+        &self.data[range.start..range.end]
+    }
+}
+
+pub struct SmackerFileInfo {
     pub width: u32,
     pub height: u32,
     pub frame_interval: f32,
+    pub audio_rate: [u32; 7],
+    pub audio_flags: [flags::Audio; 7],
+    pub smacker_decode_context: SmackerDecodeContext,
+    pub frames: Vec<SmackerFrameInfo>,
     m_map_tree: Option<HeaderTree>,
     m_clr_tree: Option<HeaderTree>,
     full_tree: Option<HeaderTree>,
     type_tree: Option<HeaderTree>,
-    pub smacker_decode_context: SmackerDecodeContext,
-    pub frames: Vec<SmackerFrame>,
     buffer: Vec<u8>
 }
-impl SmackerFile {
-    pub fn load(stream: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
+impl SmackerFileInfo {
+    fn load(stream: &mut Cursor<&[u8]>) -> std::io::Result<(Self, FrameBytesShared)> {
         let header = SmackerFileHeader::deserialize(stream, Endianness::LittleEndian)?;
         let frame_interval = match header.frame_rate.cmp(&0) {
             Ordering::Less => -header.frame_rate as f32 / 100.0,
@@ -102,18 +114,22 @@ impl SmackerFile {
         })?;
 
         stream.seek(SeekFrom::Start(trees_start_position + header.trees_size as u64))?;
-
-        let mut frames: Vec<SmackerFrame> = Vec::with_capacity(num_frames);
+        let mut buffer = vec![0u8; 0x10000000];
+        let mut frame_bytes_shared = Vec::new();
+        let mut frames: Vec<SmackerFrameInfo> = Vec::with_capacity(num_frames);
         for i in 0..num_frames {
-            let mut frame_bytes = Vec::with_capacity(frame_sizes[i] as usize);
-            stream.read(&mut frame_bytes)?;
+            let mut frame_bytes = &mut buffer[..frame_sizes[i] as usize];
+            stream.read(frame_bytes)?;
+
+            let prev_len = frame_bytes_shared.len();
+            frame_bytes_shared.extend_from_slice(frame_bytes);
+            let frame_range = prev_len..frame_bytes_shared.len();
+
             frames.push(
-                SmackerFrame {
-                    frame_bytes,
+                SmackerFrameInfo {
+                    frame_range,
                     frame_flags: frame_flags[i],
                     frame_feature_flags: frame_feature_flags[i],
-                    audio_flags,
-                    audio_rate
                 }
             );
         }
@@ -123,21 +139,32 @@ impl SmackerFile {
 
         let smacker_decode_context = SmackerDecodeContext::new(width, height);
 
-        Ok(Self {
-            width,
-            height,
-            frame_interval,
-            m_map_tree,
-            m_clr_tree,
-            full_tree,
-            type_tree,
-            smacker_decode_context,
-            frames,
-            buffer: vec![0u8; 0x80000]
-        })
+        Ok(
+            (
+                Self {
+                    width, height, frame_interval,
+                    m_map_tree, m_clr_tree, full_tree, type_tree,
+                    smacker_decode_context, frames, audio_rate, audio_flags, buffer
+                },
+                FrameBytesShared{
+                    data: frame_bytes_shared
+                }
+            )
+        )
     }
 
-    pub fn unpack(&mut self, frame_id: usize, frame: &SmackerFrame, unpack_video: bool) -> std::io::Result<()> {
+    fn unpack(&mut self, frame_bytes_shared: &FrameBytesShared, frame_id: usize, unpack_video: bool) -> std::io::Result<()> {
+        let frame_bytes = frame_bytes_shared.get_slice(self.frames[frame_id].frame_range.clone());
+        self.unpack_impl(frame_id, frame_bytes, unpack_video)
+    }
+
+    fn unpack_impl(
+        &mut self,
+        frame_id: usize,
+        frame_bytes: &[u8],
+        unpack_video: bool
+    ) -> std::io::Result<()> {
+        let frame = self.frames[frame_id].clone();
         if let Some(m_map_tree) = &mut self.m_map_tree {
             m_map_tree.reset_last();
         }
@@ -150,7 +177,7 @@ impl SmackerFile {
         if let Some(type_tree) = &mut self.type_tree {
             type_tree.reset_last();
         }
-        let mut stream = Cursor::new(&frame.frame_bytes[..]);
+        let mut stream = Cursor::new(frame_bytes);
         if frame.frame_flags.contains(flags::Frame::KEYFRAME) {
             for i in 0..256 {
                 self.smacker_decode_context.palette[i] = 0;
@@ -200,28 +227,28 @@ impl SmackerFile {
             }
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_1) {
-            self.unpack_audio(&mut stream, frame_id, frame, 0)?;
+            self.unpack_audio(&mut stream, frame_id, 0)?;
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_2) {
-            self.unpack_audio(&mut stream, frame_id, frame, 1)?;
+            self.unpack_audio(&mut stream, frame_id, 1)?;
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_3) {
-            self.unpack_audio(&mut stream, frame_id, frame, 2)?;
+            self.unpack_audio(&mut stream, frame_id, 2)?;
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_4) {
-            self.unpack_audio(&mut stream, frame_id, frame, 3)?;
+            self.unpack_audio(&mut stream, frame_id, 3)?;
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_5) {
-            self.unpack_audio(&mut stream, frame_id, frame, 4)?;
+            self.unpack_audio(&mut stream, frame_id, 4)?;
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_6) {
-            self.unpack_audio(&mut stream, frame_id, frame, 5)?;
+            self.unpack_audio(&mut stream, frame_id, 5)?;
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_AUDIO_7) {
-            self.unpack_audio(&mut stream, frame_id, frame, 6)?;
+            self.unpack_audio(&mut stream, frame_id, 6)?;
         }
         if unpack_video {
-            self.unpack_video(&mut stream, frame_id, frame)?;
+            self.unpack_video(&mut stream, frame_id)?;
         }
         Ok(())
     }
@@ -230,10 +257,9 @@ impl SmackerFile {
         &mut self,
         stream: &mut Cursor<&[u8]>,
         frame_id: usize,
-        frame: &SmackerFrame,
         track_number: usize
     ) -> std::io::Result<()> {
-        if !frame.audio_flags[track_number].contains(flags::Audio::PRESENT) {
+        if !self.audio_flags[track_number].contains(flags::Audio::PRESENT) {
             return Ok(())
         }
         unimplemented!()
@@ -243,8 +269,21 @@ impl SmackerFile {
         &mut self,
         stream: &mut Cursor<&[u8]>,
         frame_id: usize,
-        frame: &SmackerFrame
     ) -> std::io::Result<()> {
         unimplemented!()
+    }
+}
+
+pub struct SmackerFile {
+    pub file_info: SmackerFileInfo,
+    frame_bytes_shared: FrameBytesShared
+}
+impl SmackerFile {
+    pub fn load(stream: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
+        let (file_info, frame_bytes_shared) = SmackerFileInfo::load(stream)?;
+        Ok(Self{ file_info, frame_bytes_shared })
+    }
+    pub fn unpack(&mut self, frame_id: usize, unpack_video: bool) -> std::io::Result<()> {
+        self.file_info.unpack(&self.frame_bytes_shared, frame_id, unpack_video)
     }
 }

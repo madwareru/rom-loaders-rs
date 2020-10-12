@@ -2,4 +2,9 @@ mod wavefile_subset;
 mod smacker;
 
 pub use wavefile_subset::{WavContent, FmtChunk};
-pub use smacker::{file::SmackerFile, frame::SmackerFrame, decode_context::SmackerDecodeContext};
+pub use smacker::{
+    file::SmackerFileInfo,
+    frame::SmackerFrameInfo,
+    frame::SmackerFile,
+    decode_context::SmackerDecodeContext
+};
