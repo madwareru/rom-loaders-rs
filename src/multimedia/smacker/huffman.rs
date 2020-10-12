@@ -280,25 +280,35 @@ impl HeaderTree {
         }
     }
 
+    fn get_leaf_value_by_node_id(&self, node_id: NodeId) -> usize {
+        match self.tree.node_arena[node_id.0] {
+            HuffmanNode::Leaf { value, .. } => value,
+            _ => unreachable!()
+        }
+    }
+
+    fn flow_value(&mut self, source_node_id: NodeId, dest_node_id: NodeId) {
+        let source_value = self.get_leaf_value_by_node_id(source_node_id);
+        match &mut self.tree.node_arena[dest_node_id.0] {
+            HuffmanNode::Leaf { value, .. } => *value = source_value,
+            _ => unreachable!()
+        }
+    }
+
     pub(crate) fn get_value<TStream: Read>(
         &mut self,
         bit_reader: &mut BitReader<TStream>
     ) -> std::io::Result<usize> {
         let val = self.tree.get_value(bit_reader)?;
-        if let Some(NodeId(id)) = self.head.last_nodes[0] {
-            if let HuffmanNode::Leaf { value, .. } = self.tree.node_arena[id] {
-                if value != val {
-                    for i in 0..3 {
-                        match self.head.last_nodes[i] {
-                            None => {}
-                            Some(NodeId(id)) => {
-                                match &mut self.tree.node_arena[id] {
-                                    HuffmanNode::Leaf { value, .. } => *value = val,
-                                    HuffmanNode::Node { .. } => {}
-                                }
-                            }
-                        }
-                    }
+        if let (Some(node_id0), Some(node_id1), Some(node_id2)) =
+             (self.head.last_nodes[0], self.head.last_nodes[1], self.head.last_nodes[2]) {
+            let v0 = self.get_leaf_value_by_node_id(node_id0);
+            if v0 != val {
+                self.flow_value(node_id1, node_id2);
+                self.flow_value(node_id0, node_id1);
+                match &mut self.tree.node_arena[node_id0.0] {
+                    HuffmanNode::Leaf { value, .. } => *value = val,
+                    _ => unreachable!()
                 }
             }
         }
