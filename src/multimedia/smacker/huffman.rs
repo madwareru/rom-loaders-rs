@@ -137,7 +137,10 @@ impl HuffmanContext {
         header_tree_head: &mut HeaderTreeHead,
         max_depth: usize,
     ) -> std::io::Result<Self> {
-        unimplemented!()
+        let mut context = HuffmanContext::new(max_depth);
+        let root_node_id = context.root_node_id;
+        Self::decode_big_tree(bit_reader, header_tree_head, max_depth, &mut context, root_node_id, 0)?;
+        Ok(context)
     }
 
     fn decode_big_tree<TStream: Read>(
