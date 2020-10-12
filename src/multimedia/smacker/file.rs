@@ -58,6 +58,7 @@ pub struct SmackerFileInfo {
     pub frame_interval: f32,
     pub audio_rate: [u32; 7],
     pub audio_flags: [flags::Audio; 7],
+    pub audio_tracks: Vec<Vec<f32>>,
     pub smacker_decode_context: SmackerDecodeContext,
     pub frames: Vec<SmackerFrameInfo>,
     m_map_tree: Option<HeaderTree>,
@@ -142,12 +143,27 @@ impl SmackerFileInfo {
 
         let smacker_decode_context = SmackerDecodeContext::new(width, height);
 
+        let mut audio_tracks: Vec<Vec<f32>> = vec![Vec::new(); 7];
+        for i in 0..7 {
+            audio_tracks[i].reserve(header.audio_size[i] as usize);
+        }
+
         Ok(
             (
                 Self {
-                    width, height, frame_interval,
-                    m_map_tree, m_clr_tree, full_tree, type_tree,
-                    smacker_decode_context, frames, audio_rate, audio_flags, buffer
+                    width,
+                    height,
+                    frame_interval,
+                    m_map_tree,
+                    m_clr_tree,
+                    full_tree,
+                    type_tree,
+                    smacker_decode_context,
+                    frames,
+                    audio_rate,
+                    audio_flags,
+                    audio_tracks,
+                    buffer
                 },
                 FrameBytesShared{
                     data: frame_bytes_shared
