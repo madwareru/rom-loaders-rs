@@ -125,17 +125,52 @@ impl SmackerFileInfo {
             if bit_reader.read_bits(1)? == 1 {
                 m_map_tree = Some(HeaderTree::read(bit_reader, header.m_map_size as usize)?);
             }
+            Ok(())
+        })?;
+        stream.seek(SeekFrom::Start(trees_start_position + header.m_map_size as u64))?;
+        with_bit_reader(stream, |bit_reader| {
             if bit_reader.read_bits(1)? == 1 {
                 m_clr_tree = Some(HeaderTree::read(bit_reader, header.m_clr_size as usize)?);
             }
+            Ok(())
+        })?;
+        stream.seek(SeekFrom::Start(trees_start_position +
+            header.m_map_size as u64 +
+            header.m_clr_size as u64
+        ))?;
+        with_bit_reader(stream, |bit_reader| {
             if bit_reader.read_bits(1)? == 1 {
                 full_tree = Some(HeaderTree::read(bit_reader, header.full_size as usize)?);
             }
+            Ok(())
+        })?;
+        stream.seek(SeekFrom::Start(trees_start_position +
+            header.m_map_size as u64 +
+            header.m_clr_size as u64 +
+            header.full_size as u64
+        ))?;
+        with_bit_reader(stream, |bit_reader| {
             if bit_reader.read_bits(1)? == 1 {
                 type_tree = Some(HeaderTree::read(bit_reader, header.type_size as usize)?);
             }
             Ok(())
         })?;
+
+        // with_bit_reader(stream, |bit_reader| {
+        //     if bit_reader.read_bits(1)? == 1 {
+        //         m_map_tree = Some(HeaderTree::read(bit_reader, header.m_map_size as usize)?);
+        //     }
+        //     if bit_reader.read_bits(1)? == 1 {
+        //         m_clr_tree = Some(HeaderTree::read(bit_reader, header.m_clr_size as usize)?);
+        //     }
+        //     if bit_reader.read_bits(1)? == 1 {
+        //         full_tree = Some(HeaderTree::read(bit_reader, header.full_size as usize)?);
+        //     }
+        //     if bit_reader.read_bits(1)? == 1 {
+        //         type_tree = Some(HeaderTree::read(bit_reader, header.type_size as usize)?);
+        //     }
+        //     Ok(())
+        // })?;
 
         stream.seek(SeekFrom::Start(trees_start_position + header.trees_size as u64))?;
         let mut buffer = vec![0u8; 0x10000000];
