@@ -275,21 +275,32 @@ impl HeaderTree {
         bit_reader: &mut BitReader<TStream>
     ) -> std::io::Result<u16> {
         let val = self.tree.get_value(bit_reader)?;
-        if !self.is_leaf(self.head.last_nodes[0]) {
-            return Ok(val);
-        }
-        let (node_id0, node_id1, node_id2) = (
-            self.head.last_nodes[0],
-            self.head.last_nodes[1],
-            self.head.last_nodes[2]
-        );
-        let v0 = self.get_leaf_value_by_node_id(node_id0);
-        if v0 != val {
-            self.flow_value(node_id1, node_id2);
-            self.flow_value(node_id0, node_id1);
-            match &mut self.tree.node_arena[node_id0.0] {
-                HuffmanNode::Leaf { value, .. } => *value = val,
-                _ => unreachable!()
+        if self.is_leaf(self.head.last_nodes[0]) {
+            let v0 = self.get_leaf_value_by_node_id(self.head.last_nodes[0]);
+            if v0 != val {
+                self.flow_value(self.head.last_nodes[1], self.head.last_nodes[2]);
+                self.flow_value(self.head.last_nodes[0], self.head.last_nodes[1]);
+                match &mut self.tree.node_arena[self.head.last_nodes[0].0] {
+                    HuffmanNode::Leaf { value, .. } => *value = val,
+                    _ => unreachable!()
+                }
+            }
+        } else if self.is_leaf(self.head.last_nodes[1]) {
+            let v1 = self.get_leaf_value_by_node_id(self.head.last_nodes[1]);
+            if v1 != val {
+                self.flow_value(self.head.last_nodes[1], self.head.last_nodes[2]);
+                match &mut self.tree.node_arena[self.head.last_nodes[1].0] {
+                    HuffmanNode::Leaf { value, .. } => *value = val,
+                    _ => unreachable!()
+                }
+            }
+        } else if self.is_leaf(self.head.last_nodes[2]) {
+            let v2 = self.get_leaf_value_by_node_id(self.head.last_nodes[0]);
+            if v2 != val {
+                match &mut self.tree.node_arena[self.head.last_nodes[2].0] {
+                    HuffmanNode::Leaf { value, .. } => *value = val,
+                    _ => unreachable!()
+                }
             }
         }
         Ok(val)
