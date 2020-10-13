@@ -243,6 +243,13 @@ impl HeaderTree {
         }
     }
 
+    fn is_leaf(&self, node_id: NodeId) -> bool {
+        match self.tree.node_arena[node_id.0] {
+            HuffmanNode::Leaf { .. } => true,
+            _ => false
+        }
+    }
+
     fn get_leaf_value_by_node_id(&self, node_id: NodeId) -> u16 {
         match self.tree.node_arena[node_id.0] {
             HuffmanNode::Leaf { value, .. } => value,
@@ -263,6 +270,11 @@ impl HeaderTree {
         bit_reader: &mut BitReader<TStream>
     ) -> std::io::Result<u16> {
         let val = self.tree.get_value(bit_reader)?;
+        if !self.is_leaf(self.head.last_nodes[0]) ||
+            !self.is_leaf(self.head.last_nodes[1]) ||
+            !self.is_leaf(self.head.last_nodes[2]){
+            Ok(val)
+        }
         let (node_id0, node_id1, node_id2) = (
             self.head.last_nodes[0],
             self.head.last_nodes[1],
