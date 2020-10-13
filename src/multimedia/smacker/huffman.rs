@@ -1,7 +1,7 @@
 use std::io::Read;
 use super::bit_reader::BitReader;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub(crate) struct NodeId(usize);
 
 #[derive(Copy, Clone)]
@@ -144,7 +144,7 @@ impl HuffmanContext {
 
             for i in 0..3 {
                 if header_tree_head.escapes[i] == value as u16 {
-                    header_tree_head.last_nodes[i] = Some(node_id);
+                    header_tree_head.last_nodes[i] = node_id;
                     value = 0
                 }
             }
@@ -183,7 +183,7 @@ pub(crate) struct HeaderTreeHead {
     low_tree: Option<HuffmanContext>,
     high_tree: Option<HuffmanContext>,
     escapes: [u16; 3],
-    last_nodes: [Option<NodeId>; 3],
+    last_nodes: [NodeId; 3],
 }
 
 pub(crate) struct HeaderTree {
@@ -213,7 +213,7 @@ impl HeaderTree {
         escapes[0] = bit_reader.read_bits(16)? as u16;
         escapes[1] = bit_reader.read_bits(16)? as u16;
         escapes[2] = bit_reader.read_bits(16)? as u16;
-        let last_nodes = [None; 3];
+        let last_nodes = [Default::default(); 3];
 
         let mut head = HeaderTreeHead {
             low_tree,
@@ -233,8 +233,7 @@ impl HeaderTree {
     pub(crate) fn reset_last(&mut self) {
         for i in 0..3 {
             match self.head.last_nodes[i] {
-                None => {}
-                Some(NodeId(id)) => {
+                NodeId(id) => {
                     match &mut self.tree.node_arena[id] {
                         HuffmanNode::Leaf { value, .. } => *value = 0,
                         HuffmanNode::Node { .. } => {}
@@ -247,7 +246,7 @@ impl HeaderTree {
     fn get_leaf_value_by_node_id(&self, node_id: NodeId) -> u16 {
         match self.tree.node_arena[node_id.0] {
             HuffmanNode::Leaf { value, .. } => value,
-            _ => unreachable!()
+            _ => unreachable!() // we will panic if someone tries to do it on a non-leaf node
         }
     }
 
@@ -255,7 +254,7 @@ impl HeaderTree {
         let source_value = self.get_leaf_value_by_node_id(source_node_id);
         match &mut self.tree.node_arena[dest_node_id.0] {
             HuffmanNode::Leaf { value, .. } => *value = source_value,
-            _ => unreachable!()
+            _ => unreachable!() // we will panic if someone tries to do it on a non-leaf node
         }
     }
 
@@ -264,16 +263,18 @@ impl HeaderTree {
         bit_reader: &mut BitReader<TStream>
     ) -> std::io::Result<u16> {
         let val = self.tree.get_value(bit_reader)?;
-        if let (Some(node_id0), Some(node_id1), Some(node_id2)) =
-             (self.head.last_nodes[0], self.head.last_nodes[1], self.head.last_nodes[2]) {
-            let v0 = self.get_leaf_value_by_node_id(node_id0);
-            if v0 != val {
-                self.flow_value(node_id1, node_id2);
-                self.flow_value(node_id0, node_id1);
-                match &mut self.tree.node_arena[node_id0.0] {
-                    HuffmanNode::Leaf { value, .. } => *value = val,
-                    _ => unreachable!()
-                }
+        let (node_id0, node_id1, node_id2) = (
+            self.head.last_nodes[0],
+            self.head.last_nodes[1],
+            self.head.last_nodes[2]
+        );
+        let v0 = self.get_leaf_value_by_node_id(node_id0);
+        if v0 != val {
+            self.flow_value(node_id1, node_id2);
+            self.flow_value(node_id0, node_id1);
+            match &mut self.tree.node_arena[node_id0.0] {
+                HuffmanNode::Leaf { value, .. } => *value = val,
+                _ => unreachable!()
             }
         }
         Ok(val)
