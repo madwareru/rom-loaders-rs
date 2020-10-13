@@ -80,6 +80,7 @@ impl SmackerFileInfo {
         let mut header = SmackerFileHeader::deserialize(stream, Endianness::LittleEndian)?;
         let header_flags = flags::Header::from_bits(header.header_flags as u8).unwrap();
         if header_flags.contains(flags::Header::HAS_RING_FRAME) {
+            println!("has ring frame!");
             header.num_frames += 1;
         }
 
