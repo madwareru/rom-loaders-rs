@@ -339,11 +339,12 @@ impl SmackerFileInfo {
                                 (current_block % width_blocks) * 4,
                                 (current_block / width_blocks) * 4
                             );
-                            for j in y..y+4 {
-                                let stride = j * self.width as usize;
-                                for i in x..x+4 {
-                                    self.smacker_decode_context.image[stride + i] = extra;
+                            let mut stride = y * self.width as usize + x;
+                            for _ in 0..4 {
+                                for i in stride..stride+4 {
+                                    self.smacker_decode_context.image[i] = extra;
                                 }
+                                stride += self.width as usize;
                             }
                             current_block += 1;
                         }
@@ -371,13 +372,14 @@ impl SmackerFileInfo {
                                 (current_block % width_blocks) * 4,
                                 (current_block / width_blocks) * 4
                             );
-                            for j in y..y+4 {
-                                let stride = j * self.width as usize;
-                                for i in x..x+4 {
+                            let mut stride = y * self.width as usize + x;
+                            for _ in 0..4 {
+                                for i in stride..stride+4 {
                                     let kind = (pix_kind_lookup & 0b1) as usize;
                                     pix_kind_lookup >>= 1;
-                                    self.smacker_decode_context.image[stride + i] = color_indices[kind];
+                                    self.smacker_decode_context.image[i] = color_indices[kind];
                                 }
+                                stride += self.width as usize;
                             }
                             current_block += 1;
                         }
@@ -391,8 +393,8 @@ impl SmackerFileInfo {
                                 (current_block % width_blocks) * 4,
                                 (current_block / width_blocks) * 4
                             );
-                            for j in y..y+4 {
-                                let stride = j * self.width as usize;
+                            let mut stride = y * self.width as usize + x;
+                            for _ in 0..4 {
                                 let color_indices = match self.full_tree.as_mut() {
                                     Some(tree) => {
                                         let color_idx_pair1 = tree.get_value(bit_reader)? as u16;
@@ -403,12 +405,13 @@ impl SmackerFileInfo {
                                             (color_idx_pair1 & 0xFF) as u8,
                                             (color_idx_pair1 / 0x100) as u8,
                                         ]
-                                    }
+                                    },
                                     _ => unreachable!()
                                 };
                                 for i in 0..4 {
-                                    self.smacker_decode_context.image[x + stride + i] = color_indices[i];
+                                    self.smacker_decode_context.image[stride + i] = color_indices[i];
                                 }
+                                stride += self.width as usize;
                             }
                             current_block += 1;
                         }
