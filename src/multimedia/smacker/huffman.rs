@@ -7,22 +7,16 @@ pub struct NodeId(usize);
 #[derive(Copy, Clone)]
 pub enum HuffmanNode {
     Node {
-        bit_count: usize,
-        code: usize,
         left_node_id: NodeId,
         right_node_id: NodeId
     },
     Leaf {
-        bit_count: usize,
-        code: usize,
-        value: usize
+        value: u16
     }
 }
 impl Default for HuffmanNode {
     fn default() -> Self {
         Self::Leaf {
-            bit_count: 0,
-            code: 0,
             value: 0
         }
     }
@@ -46,7 +40,7 @@ impl HuffmanContext {
     pub fn get_value<TStream: Read>(
         &self,
         bit_reader: &mut BitReader<TStream>
-    ) -> std::io::Result<usize> {
+    ) -> std::io::Result<u16> {
         let mut node_id = self.root_node_id;
         loop {
             let node_content = self.node_arena[node_id.0];
@@ -81,36 +75,23 @@ impl HuffmanContext {
         node_id: NodeId,
         step_depth: usize
     ) -> std::io::Result<()> {
-        let (bit_count, code) = match context.node_arena[node_id.0] {
-            HuffmanNode::Leaf { bit_count, code, .. } => {
-                (bit_count, code)
-            },
-            _ => unreachable!()
-        };
-
         if bit_reader.read_bits(1)? == 0 {
             if max_depth <= step_depth {
                 panic!("maximum huffman tree size exceeded!")
             }
             context.node_arena[node_id.0] = HuffmanNode::Leaf {
-                bit_count,
-                code,
-                value: bit_reader.read_bits(8)?
+                value: bit_reader.read_bits(8)? as u16
             };
             Ok(())
         } else {
             context.node_arena[node_id.0] = {
                 let left_child = HuffmanNode::Leaf {
-                    bit_count: bit_count + 1,
-                    code: (code << 1) | 0x1,
                     value: 0
                 };
                 let left_node_id = NodeId(context.node_arena.len());
                 context.node_arena.push(left_child);
 
                 let right_child = HuffmanNode::Leaf {
-                    bit_count: bit_count + 1,
-                    code: (code << 2) | 0x11,
                     value: 0
                 };
                 let right_node_id = NodeId(context.node_arena.len());
@@ -120,8 +101,6 @@ impl HuffmanContext {
                 Self::decode_tree(bit_reader, max_depth, context, right_node_id, step_depth + 1)?;
 
                 HuffmanNode::Node {
-                    bit_count,
-                    code,
                     left_node_id,
                     right_node_id
                 }
@@ -150,13 +129,6 @@ impl HuffmanContext {
         node_id: NodeId,
         step_depth: usize
     ) -> std::io::Result<()> {
-        let (bit_count, code) = match context.node_arena[node_id.0] {
-            HuffmanNode::Leaf { bit_count, code, .. } => {
-                (bit_count, code)
-            },
-            _ => unreachable!()
-        };
-
         if bit_reader.read_bits(1)? == 0 {
             if max_depth <= step_depth {
                 panic!("maximum huffman tree size exceeded!")
@@ -177,24 +149,18 @@ impl HuffmanContext {
                 }
             }
             context.node_arena[node_id.0] = HuffmanNode::Leaf {
-                bit_count,
-                code,
                 value
             };
             Ok(())
         } else {
             context.node_arena[node_id.0] = {
                 let left_child = HuffmanNode::Leaf {
-                    bit_count: bit_count + 1,
-                    code: (code << 1) | 0x1,
                     value: 0
                 };
                 let left_node_id = NodeId(context.node_arena.len());
                 context.node_arena.push(left_child);
 
                 let right_child = HuffmanNode::Leaf {
-                    bit_count: bit_count + 1,
-                    code: (code << 2) | 0x11,
                     value: 0
                 };
                 let right_node_id = NodeId(context.node_arena.len());
@@ -204,8 +170,6 @@ impl HuffmanContext {
                 Self::decode_big_tree(bit_reader, header_tree_head, max_depth, context, right_node_id, step_depth + 1)?;
 
                 HuffmanNode::Node {
-                    bit_count,
-                    code,
                     left_node_id,
                     right_node_id
                 }
@@ -280,7 +244,7 @@ impl HeaderTree {
         }
     }
 
-    fn get_leaf_value_by_node_id(&self, node_id: NodeId) -> usize {
+    fn get_leaf_value_by_node_id(&self, node_id: NodeId) -> u16 {
         match self.tree.node_arena[node_id.0] {
             HuffmanNode::Leaf { value, .. } => value,
             _ => unreachable!()
@@ -298,7 +262,7 @@ impl HeaderTree {
     pub(crate) fn get_value<TStream: Read>(
         &mut self,
         bit_reader: &mut BitReader<TStream>
-    ) -> std::io::Result<usize> {
+    ) -> std::io::Result<u16> {
         let val = self.tree.get_value(bit_reader)?;
         if let (Some(node_id0), Some(node_id1), Some(node_id2)) =
              (self.head.last_nodes[0], self.head.last_nodes[1], self.head.last_nodes[2]) {
