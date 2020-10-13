@@ -4,21 +4,21 @@ use bin_serialization_rs::{
 };
 
 #[derive(PartialEq, Default, Clone, Debug)]
-pub struct SmackerFileHeader {
-    pub signature: u32,
-    pub width: u32,
-    pub height: u32,
-    pub num_frames: u32,
-    pub frame_rate: i32,
-    pub header_flags: u32,
-    pub audio_size: [u32; 7],
-    pub trees_size: u32,
-    pub m_map_size: u32,
-    pub m_clr_size: u32,
-    pub full_size: u32,
-    pub type_size: u32,
-    pub audio_rate: [u32; 7],
-    pub dummy: u32,
+pub(crate) struct SmackerFileHeader {
+    pub(crate) signature: u32,
+    pub(crate) width: u32,
+    pub(crate) height: u32,
+    pub(crate) num_frames: u32,
+    pub(crate) frame_rate: i32,
+    pub(crate) header_flags: u32,
+    pub(crate) audio_size: [u32; 7],
+    pub(crate) trees_size: u32,
+    pub(crate) m_map_size: u32,
+    pub(crate) m_clr_size: u32,
+    pub(crate) full_size: u32,
+    pub(crate) type_size: u32,
+    pub(crate) audio_rate: [u32; 7],
+    pub(crate) dummy: u32,
 }
 impl Reflectable for SmackerFileHeader {
     fn reflect<TSerializationReflector: SerializationReflector>(

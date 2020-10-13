@@ -2,10 +2,10 @@ use std::io::Read;
 use super::bit_reader::BitReader;
 
 #[derive(Copy, Clone)]
-pub struct NodeId(usize);
+pub(crate) struct NodeId(usize);
 
 #[derive(Copy, Clone)]
-pub enum HuffmanNode {
+pub(crate) enum HuffmanNode {
     Node {
         left_node_id: NodeId,
         right_node_id: NodeId
@@ -22,7 +22,7 @@ impl Default for HuffmanNode {
     }
 }
 
-pub struct HuffmanContext {
+pub(crate) struct HuffmanContext {
     node_arena: Vec<HuffmanNode>,
     root_node_id: NodeId
 }
@@ -37,7 +37,7 @@ impl HuffmanContext {
         }
     }
 
-    pub fn get_value<TStream: Read>(
+    pub(crate) fn get_value<TStream: Read>(
         &self,
         bit_reader: &mut BitReader<TStream>
     ) -> std::io::Result<u16> {
@@ -179,14 +179,14 @@ impl HuffmanContext {
     }
 }
 
-pub struct HeaderTreeHead {
+pub(crate) struct HeaderTreeHead {
     low_tree: Option<HuffmanContext>,
     high_tree: Option<HuffmanContext>,
     escapes: [u16; 3],
     last_nodes: [Option<NodeId>; 3],
 }
 
-pub struct HeaderTree {
+pub(crate) struct HeaderTree {
     head: HeaderTreeHead,
     tree: HuffmanContext
 }

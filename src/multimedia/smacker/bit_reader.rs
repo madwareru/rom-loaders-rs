@@ -26,7 +26,7 @@ impl<TStream : Read> Read for InternalByteReader<'_, TStream> {
 /// This is not usual bit reader. It read bits in "reversed" order
 /// (exactly what we need to do to load smacker data)
 ///
-pub struct BitReader<'a, TStream : Read> {
+pub(crate) struct BitReader<'a, TStream : Read> {
     byte_reader_owned: InternalByteReader<'a, TStream>,
     sub_bit_position : usize,
     last_byte: u8
@@ -39,7 +39,7 @@ impl<'a, TStream : Read> BitReader<'a, TStream> {
             last_byte: 0
         }
     }
-    pub fn read_bits(&mut self, count: usize) -> std::io::Result<usize> {
+    pub(crate) fn read_bits(&mut self, count: usize) -> std::io::Result<usize> {
         let mut output = 0;
         for wrote_bits in 0..count {
             if self.sub_bit_position == 0 {
@@ -53,7 +53,7 @@ impl<'a, TStream : Read> BitReader<'a, TStream> {
     }
 }
 
-pub fn with_bit_reader<F, TStream: Read>(stream: &mut TStream, mut exec_action: F) -> std::io::Result<()>
+pub(crate) fn with_bit_reader<F, TStream: Read>(stream: &mut TStream, mut exec_action: F) -> std::io::Result<()>
     where F: FnMut(&mut BitReader<TStream>) -> std::io::Result<()> {
     let mut reader = BitReader::from_stream(stream);
     exec_action(&mut reader)
