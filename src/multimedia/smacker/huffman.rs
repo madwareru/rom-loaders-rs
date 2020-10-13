@@ -213,6 +213,7 @@ impl HeaderTree {
         escapes[0] = bit_reader.read_bits(16)? as u16;
         escapes[1] = bit_reader.read_bits(16)? as u16;
         escapes[2] = bit_reader.read_bits(16)? as u16;
+        println!("escapes: {:?}", escapes);
         let last_nodes = [Default::default(); 3];
 
         let mut head = HeaderTreeHead {
