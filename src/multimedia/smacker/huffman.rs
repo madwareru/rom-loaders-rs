@@ -258,6 +258,9 @@ impl HeaderTree {
     }
 
     fn flow_value(&mut self, source_node_id: NodeId, dest_node_id: NodeId) {
+        if !self.is_leaf(source_node_id) || !self.is_leaf(dest_node_id) {
+            return;
+        }
         let source_value = self.get_leaf_value_by_node_id(source_node_id);
         match &mut self.tree.node_arena[dest_node_id.0] {
             HuffmanNode::Leaf { value, .. } => *value = source_value,
@@ -270,10 +273,8 @@ impl HeaderTree {
         bit_reader: &mut BitReader<TStream>
     ) -> std::io::Result<u16> {
         let val = self.tree.get_value(bit_reader)?;
-        if !self.is_leaf(self.head.last_nodes[0]) ||
-            !self.is_leaf(self.head.last_nodes[1]) ||
-            !self.is_leaf(self.head.last_nodes[2]){
-            Ok(val)
+        if !self.is_leaf(self.head.last_nodes[0]) {
+            return Ok(val);
         }
         let (node_id0, node_id1, node_id2) = (
             self.head.last_nodes[0],
