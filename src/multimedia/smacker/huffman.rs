@@ -144,6 +144,7 @@ impl HuffmanContext {
 
             for i in 0..3 {
                 if header_tree_head.escapes[i] == value as u16 {
+                    println!("found escape {}", i);
                     header_tree_head.last_nodes[i] = node_id;
                     value = 0
                 }
