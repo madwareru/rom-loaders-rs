@@ -1,3 +1,10 @@
+///
+/// References used:
+/// https://wiki.multimedia.cx/index.php?title=Smacker
+/// https://github.com/lu-zero/ffmpeg/blob/master/libavcodec/smacker.c
+/// https://github.com/jewalky/UnityAllods/blob/smack-support/Assets/SmackLoader.cs
+///
+
 use {
     super::{
         huffman::HeaderTree,
