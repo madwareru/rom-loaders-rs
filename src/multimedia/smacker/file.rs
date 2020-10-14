@@ -229,7 +229,7 @@ impl SmackerFileInfo {
         let mut stream = Cursor::new(frame_bytes);
         if frame.frame_flags.contains(flags::Frame::KEYFRAME) {
             for i in 0..256 {
-                self.smacker_decode_context.palette[i] = 0;
+                self.smacker_decode_context.palette[i] = (0, 0, 0);
             }
         }
         if frame.frame_feature_flags.contains(flags::FrameFeature::HAS_PALETTE) {
@@ -264,8 +264,7 @@ impl SmackerFileInfo {
                         offset += 1;
                         let b = PALETTE_MAP_TABLE[(flag_byte & 0x3F) as usize];
 
-                        next_palette[pal_offset] =
-                            0xFF_000000 + b as u32 + g as u32 * 0x100 + r as u32 * 0x10000;
+                        next_palette[pal_offset] = (r as u8, g as u8, b as u8);
                         pal_offset += 1;
                     }
                 }
