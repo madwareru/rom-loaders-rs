@@ -363,14 +363,19 @@ impl SmackerFileInfo {
             let mut audio_track = std::mem::replace(&mut self.audio_tracks[track_number], Vec::new());
 
             with_bit_reader(&mut audio_cursor, |bit_reader| {
+                if bit_reader.read_bits(1)? != 1 {
+                    println!("ERROR! data not present");
+                    return Ok(());
+                }
                 if (bit_reader.read_bits(1)? == 1) != is_stereo {
                     println!("ERROR! audio flags aren't match, probably file is corrupted");
-                    return Ok(())
+                    return Ok(());
                 }
                 if (bit_reader.read_bits(1)? == 1) != is_16_bit {
                     println!("ERROR! audio flags aren't match, probably file is corrupted");
-                    return Ok(())
+                    return Ok(());
                 }
+
                 let bytes_per_sample =
                     if !is_stereo && !is_16_bit { 1 }
                     else if is_stereo && is_16_bit { 4 }
