@@ -79,10 +79,10 @@ impl SmackerFileInfo {
     fn load(stream: &mut Cursor<&[u8]>) -> std::io::Result<(Self, FrameBytesShared)> {
         let mut header = SmackerFileHeader::deserialize(stream, Endianness::LittleEndian)?;
         println!("{}{}{}{}",
-                 ((header.signature / 0x1000000) as u8) as char,
-                 (((header.signature / 0x10000) & 0xFF) as u8) as char,
+                 ((header.signature & 0xFF) as u8) as char,
                  (((header.signature / 0x100) & 0xFF) as u8) as char,
-                 ((header.signature & 0xFF) as u8) as char
+                 (((header.signature / 0x10000) & 0xFF) as u8) as char,
+                 ((header.signature / 0x1000000) as u8) as char
         );
         let header_flags = flags::Header::from_bits(header.header_flags as u8).unwrap();
         if header_flags.contains(flags::Header::HAS_RING_FRAME) {

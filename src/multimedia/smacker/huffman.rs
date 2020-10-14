@@ -224,12 +224,32 @@ impl HeaderTree {
             last_nodes
         };
 
-        let tree = HuffmanContext::from_big_tree(bit_reader, &mut head, size)?;
-        bit_reader.read_bits(1)?;
-        Ok(Self {
+        let mut tree = HuffmanContext::from_big_tree(bit_reader, &mut head, size)?;
+        let mut result = Self {
             head,
             tree
-        })
+        };
+        if !result.is_leaf(result.head.last_nodes[0]) {
+            result.head.last_nodes[0] = NodeId(result.tree.node_arena.len());
+            result.tree.node_arena.push(HuffmanNode::Leaf {
+                value: 0
+            })
+        }
+        if !result.is_leaf(result.head.last_nodes[1]) {
+            result.head.last_nodes[1] = NodeId(result.tree.node_arena.len());
+            result.tree.node_arena.push(HuffmanNode::Leaf {
+                value: 0
+            })
+        }
+        if !result.is_leaf(result.head.last_nodes[2]) {
+            result.head.last_nodes[2] = NodeId(result.tree.node_arena.len());
+            result.tree.node_arena.push(HuffmanNode::Leaf {
+                value: 0
+            })
+        }
+
+        bit_reader.read_bits(1)?;
+        Ok(result)
     }
 
     pub(crate) fn reset_last(&mut self) {
@@ -275,32 +295,13 @@ impl HeaderTree {
         bit_reader: &mut BitReader<TStream>
     ) -> std::io::Result<u16> {
         let val = self.tree.get_value(bit_reader)?;
-        if self.is_leaf(self.head.last_nodes[0]) {
-            let v0 = self.get_leaf_value_by_node_id(self.head.last_nodes[0]);
-            if v0 != val {
-                self.flow_value(self.head.last_nodes[1], self.head.last_nodes[2]);
-                self.flow_value(self.head.last_nodes[0], self.head.last_nodes[1]);
-                match &mut self.tree.node_arena[self.head.last_nodes[0].0] {
-                    HuffmanNode::Leaf { value, .. } => *value = val,
-                    _ => unreachable!()
-                }
-            }
-        } else if self.is_leaf(self.head.last_nodes[1]) {
-            let v1 = self.get_leaf_value_by_node_id(self.head.last_nodes[1]);
-            if v1 != val {
-                self.flow_value(self.head.last_nodes[1], self.head.last_nodes[2]);
-                match &mut self.tree.node_arena[self.head.last_nodes[1].0] {
-                    HuffmanNode::Leaf { value, .. } => *value = val,
-                    _ => unreachable!()
-                }
-            }
-        } else if self.is_leaf(self.head.last_nodes[2]) {
-            let v2 = self.get_leaf_value_by_node_id(self.head.last_nodes[0]);
-            if v2 != val {
-                match &mut self.tree.node_arena[self.head.last_nodes[2].0] {
-                    HuffmanNode::Leaf { value, .. } => *value = val,
-                    _ => unreachable!()
-                }
+        let v0 = self.get_leaf_value_by_node_id(self.head.last_nodes[0]);
+        if v0 != val {
+            self.flow_value(self.head.last_nodes[1], self.head.last_nodes[2]);
+            self.flow_value(self.head.last_nodes[0], self.head.last_nodes[1]);
+            match &mut self.tree.node_arena[self.head.last_nodes[0].0] {
+                HuffmanNode::Leaf { value, .. } => *value = val,
+                _ => unreachable!()
             }
         }
         Ok(val)
