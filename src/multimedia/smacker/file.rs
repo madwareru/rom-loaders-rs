@@ -388,10 +388,7 @@ impl SmackerFileInfo {
                     else if is_stereo && is_16_bit { 4 }
                     else { 2 };
 
-                let (mut i8_bases, mut i16_bases) = (
-                    Vec::with_capacity(bytes_per_sample),
-                    Vec::with_capacity(bytes_per_sample)
-                );
+                let (mut i8_bases, mut i16_bases) = ([0i8; 2], [0i16; 2]);
                 for i in 0..bytes_per_sample {
                     bit_reader.read_bits(1)?; // junk bits
                     audio_trees[i].clear();
@@ -402,20 +399,19 @@ impl SmackerFileInfo {
                     if is_stereo {
                         let high = bit_reader.read_bits(8)? as u16; // bytes are reversed
                         let low = bit_reader.read_bits(8)? as u16;
-                        let right = u16_to_i16(high * 0x100 + low); // first comes right ear
+                        i16_bases[1] = u16_to_i16(high * 0x100 + low); // first comes right ear
                         let high = bit_reader.read_bits(8)? as u16;
                         let low = bit_reader.read_bits(8)? as u16;
-                        i16_bases.push(u16_to_i16(high * 0x100 + low)); // then comes left ear
-                        i16_bases.push(right);
+                        i16_bases[0] = u16_to_i16(high * 0x100 + low); // then comes left ear
                     } else {
                         let high = bit_reader.read_bits(8)? as u16;
                         let low = bit_reader.read_bits(8)? as u16;
-                        i16_bases.push(u16_to_i16(high * 0x100 + low));
+                        i16_bases[0] = u16_to_i16(high * 0x100 + low);
                     }
                 } else {
-                    i8_bases.push(u8_to_i8(bit_reader.read_bits(8)? as u8));
+                    i8_bases[0] = u8_to_i8(bit_reader.read_bits(8)? as u8);
                     if is_stereo {
-                        i8_bases.push(u8_to_i8(bit_reader.read_bits(8)? as u8));
+                        i8_bases[1] = u8_to_i8(bit_reader.read_bits(8)? as u8);
                     }
                 }
 
