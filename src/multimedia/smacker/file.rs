@@ -431,7 +431,7 @@ impl SmackerFileInfo {
                     } else {
                         for i in 0..result_len {
                             let sample = a_bases[i] + u8_to_i8(sample_bytes[i]);
-                            let sample = sample / std::i8::MAX as f32;
+                            let sample = sample as f32 / std::i8::MAX as f32;
                             audio_track.push(sample);
                         }
                     }
