@@ -432,13 +432,13 @@ impl SmackerFileInfo {
                                 (sample_bytes[i * 2] as u16) |
                                 (sample_bytes[i * 2 + 1] as u16 * 0x100)
                             );
-                            let sample = i16_bases[i] as f32 / std::i16::MAX as f32;
+                            let sample = i16_bases[i] as f32 / (std::i16::MAX as f32 + 1.0);
                             audio_track.push(sample);
                         }
                     } else {
                         for i in 0..result_base_len {
                             i8_bases[i] += u8_to_i8(sample_bytes[i]);
-                            let sample = i8_bases[i] as f32 / std::i8::MAX as f32;
+                            let sample = i8_bases[i] as f32 / (std::i8::MAX as f32 + 1.0);
                             audio_track.push(sample);
                         }
                     }
