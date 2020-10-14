@@ -22,6 +22,7 @@ use {
         cmp::Ordering
     }
 };
+use crate::multimedia::smacker::huffman::HuffmanContext;
 
 const BLOCK_MONOCHROME: u16 = 0;
 const BLOCK_FULL: u16 = 1;
@@ -306,11 +307,139 @@ impl SmackerFileInfo {
             return Ok(())
         }
         let audio_length = U32Wrapper::deserialize(stream, Endianness::LittleEndian)?;
+        let audio_length = *audio_length - 4;
         if skip_audio {
-            stream.seek(SeekFrom::Current(audio_length.0 as i64 - 4))?;
+            stream.seek(SeekFrom::Current(audio_length as i64))?;
             Ok(())
         } else {
-            unimplemented!()
+            let dpcm_compressed = self.audio_flags[track_number].contains(flags::Audio::COMPRESSED);
+            let bink_compressed = self.audio_flags[track_number].contains(flags::Audio::COMPRESSED_BINK);
+
+            let compressed = dpcm_compressed || bink_compressed;
+            let audio_length_unpacked = if compressed {
+                let audio_length_comp = U32Wrapper::deserialize(stream, Endianness::LittleEndian)?;
+                *audio_length_comp
+            } else {
+                audio_length
+            } as usize;
+            let buffer_to_read = &mut self.buffer[..audio_length_unpacked];
+            stream.read(buffer_to_read)?;
+            if bink_compressed {
+                println!("WARNING! bink audio is not supported");
+                return Ok(())
+            }
+            if !compressed {
+                println!("WARNING! uncompressed audio is not yet supported");
+                return Ok(())
+            }
+
+            let is_stereo = self.audio_flags[track_number].contains(flags::Audio::IS_STEREO);
+            let is_16_bit = self.audio_flags[track_number].contains(flags::Audio::IS_16_BIT);
+
+            // now get the same buffer padded with additional zeros at the end
+            // to ensure huffman does its job without errors:
+            let buffer_to_read = &mut self.buffer[..audio_length_unpacked+4];
+            for i in audio_length_unpacked..audio_length_unpacked+4 {
+                buffer_to_read[i] = 0;
+            }
+            let mut audio_cursor = Cursor::new(buffer_to_read);
+
+            fn u8_to_i8(value: u8) -> i8 {
+                if value < 128 {
+                    value as i8
+                } else {
+                    -((256 - (value as u16)) as i8)
+                }
+            }
+            fn u16_to_i16(value: u16) -> i16 {
+                if value < 32768 {
+                    value as i16
+                } else {
+                    -((65536 - (value as u32)) as i16)
+                }
+            }
+
+            // swap trick to settle with borrow checker:
+            let mut audio_track = std::mem::replace(&mut self.audio_tracks[track_number], Vec::new());
+
+            with_bit_reader(&mut audio_cursor, |bit_reader| {
+                if (bit_reader.read_bits(1)? == 1) != is_stereo {
+                    println!("ERROR! audio flags aren't match, probably file is corrupted");
+                    return Ok(())
+                }
+                if (bit_reader.read_bits(1)? == 1) != is_16_bit {
+                    println!("ERROR! audio flags aren't match, probably file is corrupted");
+                    return Ok(())
+                }
+                let bytes_per_sample =
+                    if !is_stereo && !is_16_bit { 1 }
+                    else if is_stereo && is_16_bit { 4 }
+                    else { 2 };
+
+                let (mut audio_trees, mut a_bases) = (
+                    Vec::with_capacity(bytes_per_sample),
+                    Vec::with_capacity(bytes_per_sample)
+                );
+                for _ in 0..bytes_per_sample {
+                    bit_reader.read_bits(1)?; // junk bits
+                    audio_trees.push(HuffmanContext::from_tree(bit_reader, 256)?);
+                    bit_reader.read_bits(1)?; // junk bits
+                }
+                for _ in 0..bytes_per_sample {
+                    let base = bit_reader.read_bits(8)? as u8;
+                    a_bases.push(u8_to_i8(base));
+                }
+
+                let remainder = audio_length_unpacked % bytes_per_sample;
+                if remainder != 0 {
+                    println!("ERROR! fractional sample count, probably file is corrupted");
+                    return Ok(())
+                }
+                let num_samples = audio_length_unpacked / bytes_per_sample;
+
+                let mut sample_bytes = vec![0u8; bytes_per_sample];
+                let result_len = if is_stereo {2} else {1};
+                let mut a_short_bases = vec![0i16; result_len ];
+
+                if is_16_bit {
+                    for i in 0..a_short_bases.len() {
+                        a_short_bases[i] = (a_bases[i * 2] as i16) | (a_bases[i * 2 + 1] as i16);
+                    }
+                }
+
+                for _ in 0..num_samples {
+                    for i in 0..bytes_per_sample {
+                        sample_bytes[i] = audio_trees[i].get_value(bit_reader)? as u8;
+                    }
+                    // if we have 16-bit:
+                    // sampleBytes[0] = 00FF left
+                    // sampleBytes[1] = FF00 left
+                    // sampleBytes[2] = 00FF right
+                    // sampleBytes[3] = FF00 right
+                    // if we have 8-bit:
+                    // sampleBytes[0] = left
+                    // sampleBytes[1] = right
+                    if is_16_bit {
+                        for i in 0..result_len {
+                            a_short_bases[i] += u16_to_i16(
+                                (sample_bytes[i * 2] as u16) |
+                                (sample_bytes[i * 2 + 1] as u16 * 0x100)
+                            );
+                            let sample = a_short_bases[i] as f32 / std::i16::MAX as f32;
+                            audio_track.push(sample);
+                        }
+                    } else {
+                        for i in 0..result_len {
+                            a_bases[i] += u8_to_i8(sample_bytes[i]);
+                            let sample = a_bases[i] as f32 / std::i8::MAX as f32;
+                            audio_track.push(sample);
+                        }
+                    }
+                }
+                Ok(())
+            })?;
+            self.audio_tracks[track_number] = audio_track;
+            Ok(())
         }
     }
 

@@ -15,7 +15,7 @@ bitflags! {
     pub struct Audio : u32 {
         const COMPRESSED_BINK = 0x0C_000000;
         const IS_STEREO       = 0x10_000000;
-        const IS16BIT         = 0x20_000000;
+        const IS_16_BIT         = 0x20_000000;
         const PRESENT         = 0x40_000000;
         const COMPRESSED      = 0x80_000000;
     }

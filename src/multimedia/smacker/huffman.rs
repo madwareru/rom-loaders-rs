@@ -58,7 +58,7 @@ impl HuffmanContext {
         }
     }
 
-    fn from_tree<TStream: Read>(
+    pub(crate) fn from_tree<TStream: Read>(
         bit_reader: &mut BitReader<TStream>,
         max_depth: usize
     ) -> std::io::Result<Self> {
@@ -224,11 +224,8 @@ impl HeaderTree {
             last_nodes
         };
 
-        let mut tree = HuffmanContext::from_big_tree(bit_reader, &mut head, size)?;
-        let mut result = Self {
-            head,
-            tree
-        };
+        let tree = HuffmanContext::from_big_tree(bit_reader, &mut head, size)?;
+        let mut result = Self { head, tree };
         if !result.is_leaf(result.head.last_nodes[0]) {
             result.head.last_nodes[0] = NodeId(result.tree.node_arena.len());
             result.tree.node_arena.push(HuffmanNode::Leaf {
@@ -247,7 +244,6 @@ impl HeaderTree {
                 value: 0
             })
         }
-
         bit_reader.read_bits(1)?;
         Ok(result)
     }
