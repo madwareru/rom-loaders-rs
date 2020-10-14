@@ -381,7 +381,8 @@ impl SmackerFileInfo {
                     else if is_stereo && is_16_bit { 4 }
                     else { 2 };
 
-                let (mut audio_trees, mut a_bases) = (
+                let (mut audio_trees, mut i8_bases, mut i16_bases) = (
+                    Vec::with_capacity(bytes_per_sample),
                     Vec::with_capacity(bytes_per_sample),
                     Vec::with_capacity(bytes_per_sample)
                 );
@@ -390,9 +391,25 @@ impl SmackerFileInfo {
                     audio_trees.push(HuffmanContext::from_tree(bit_reader, 256)?);
                     bit_reader.read_bits(1)?; // junk bits
                 }
-                for _ in 0..bytes_per_sample {
-                    let base = bit_reader.read_bits(8)? as u8;
-                    a_bases.push(u8_to_i8(base));
+                if is_16_bit {
+                    if is_stereo {
+                        let high = bit_reader.read_bits(8)? as u16; // bytes are reversed
+                        let low = bit_reader.read_bits(8)? as u16;
+                        let right = u16_to_i16(high * 0x100 + low); // first comes right ear
+                        let high = bit_reader.read_bits(8)? as u16;
+                        let low = bit_reader.read_bits(8)? as u16;
+                        i16_bases.push(u16_to_i16(high * 0x100 + low)); // then comes left ear
+                        i16_bases.push(right);
+                    } else {
+                        let high = bit_reader.read_bits(8)? as u16;
+                        let low = bit_reader.read_bits(8)? as u16;
+                        i16_bases.push(u16_to_i16(high * 0x100 + low));
+                    }
+                } else {
+                    i8_bases.push(u8_to_i8(bit_reader.read_bits(8)? as u8));
+                    if is_stereo {
+                        i8_bases.push(u8_to_i8(bit_reader.read_bits(8)? as u8));
+                    }
                 }
 
                 let remainder = audio_length_unpacked % bytes_per_sample;
@@ -403,46 +420,25 @@ impl SmackerFileInfo {
                 let num_samples = audio_length_unpacked / bytes_per_sample;
 
                 let mut sample_bytes = vec![0u8; bytes_per_sample];
-                let result_len = if is_stereo {2} else {1};
-                let mut a_short_bases = vec![0i16; result_len ];
-
-                if is_16_bit {
-                    let mut i = 0;
-                    let mut offset = 0;
-                    while i < a_bases.len() {
-                        a_short_bases[offset] = (a_bases[i + 2] as i16) * 0x100 + (a_bases[i + 3] as i16);
-                        offset += 1;
-                        a_short_bases[offset] = (a_bases[i] as i16) * 0x100 + (a_bases[i + 1] as i16);
-                        offset += 1;
-                        i += 4;
-                    }
-                }
+                let result_base_len = if is_stereo {2} else {1};
 
                 for _ in 0..num_samples {
                     for i in 0..bytes_per_sample {
                         sample_bytes[i] = audio_trees[i].get_value(bit_reader)? as u8;
                     }
-                    // if we have 16-bit:
-                    // sampleBytes[0] = 00FF left
-                    // sampleBytes[1] = FF00 left
-                    // sampleBytes[2] = 00FF right
-                    // sampleBytes[3] = FF00 right
-                    // if we have 8-bit:
-                    // sampleBytes[0] = left
-                    // sampleBytes[1] = right
                     if is_16_bit {
-                        for i in 0..result_len {
-                            a_short_bases[i] += u16_to_i16(
+                        for i in 0..result_base_len {
+                            i16_bases[i] += u16_to_i16(
                                 (sample_bytes[i * 2] as u16) |
                                 (sample_bytes[i * 2 + 1] as u16 * 0x100)
                             );
-                            let sample = a_short_bases[i] as f32 / std::i16::MAX as f32;
+                            let sample = i16_bases[i] as f32 / std::i16::MAX as f32;
                             audio_track.push(sample);
                         }
                     } else {
-                        for i in 0..result_len {
-                            a_bases[i] += u8_to_i8(sample_bytes[i]);
-                            let sample = a_bases[i] as f32 / std::i8::MAX as f32;
+                        for i in 0..result_base_len {
+                            i8_bases[i] += u8_to_i8(sample_bytes[i]);
+                            let sample = i8_bases[i] as f32 / std::i8::MAX as f32;
                             audio_track.push(sample);
                         }
                     }
