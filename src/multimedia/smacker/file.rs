@@ -422,6 +422,16 @@ impl SmackerFileInfo {
                 let mut sample_bytes = vec![0u8; bytes_per_sample];
                 let result_base_len = if is_stereo {2} else {1};
 
+                // first write just bases as is:
+                for i in 0..result_base_len {
+                    let sample = if is_16_bit {
+                        i16_bases[i] as f32 / (std::i16::MAX as f32 + 1.0)
+                    } else {
+                        i8_bases[i] as f32 / (std::i8::MAX as f32 + 1.0)
+                    };
+                    audio_track.push(sample);
+                }
+                // then go forward to fill the buffer itself from DPCM data
                 for _ in 0..num_samples {
                     for i in 0..bytes_per_sample {
                         sample_bytes[i] = audio_trees[i].get_value(bit_reader)? as u8;
