@@ -407,8 +407,14 @@ impl SmackerFileInfo {
                 let mut a_short_bases = vec![0i16; result_len ];
 
                 if is_16_bit {
-                    for i in 0..a_short_bases.len() {
-                        a_short_bases[i] = (a_bases[i * 2] as i16) | (a_bases[i * 2 + 1] as i16);
+                    let mut i = 0;
+                    let mut offset = 0;
+                    while i < a_bases.len() {
+                        a_short_bases[offset] = (a_bases[i + 2] as i16) * 0x100 + (a_bases[i + 3] as i16);
+                        offset += 1;
+                        a_short_bases[offset] = (a_bases[i] as i16) * 0x100 + (a_bases[i + 1] as i16);
+                        offset += 1;
+                        i += 4;
                     }
                 }
 
