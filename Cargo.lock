@@ -60,7 +60,7 @@ checksum = "26412eb97c6b088a6997e05f69403a802a92d520de2f8e63c2b65f9e0f47c4e8"
 
 [[package]]
 name = "rom-loaders-rs"
-version = "0.2.31"
+version = "0.2.32"
 dependencies = [
  "bin-serialization-rs",
  "bitflags",
