@@ -426,17 +426,17 @@ impl SmackerFileInfo {
                     // sampleBytes[1] = right
                     if is_16_bit {
                         for i in 0..result_len {
-                            let sample = a_short_bases[i] + u16_to_i16(
+                            a_short_bases[i] += u16_to_i16(
                                 (sample_bytes[i * 2] as u16) |
                                 (sample_bytes[i * 2 + 1] as u16 * 0x100)
                             );
-                            let sample = sample as f32 / std::i16::MAX as f32;
+                            let sample = a_short_bases[i] as f32 / std::i16::MAX as f32;
                             audio_track.push(sample);
                         }
                     } else {
                         for i in 0..result_len {
-                            let sample = a_bases[i] + u8_to_i8(sample_bytes[i]);
-                            let sample = sample as f32 / std::i8::MAX as f32;
+                            a_bases[i] += u8_to_i8(sample_bytes[i]);
+                            let sample = a_bases[i] as f32 / std::i8::MAX as f32;
                             audio_track.push(sample);
                         }
                     }
