@@ -6,5 +6,6 @@ pub use smacker::{
     file::SmackerFileInfo,
     file::SmackerFile,
     frame::SmackerFrameInfo,
-    decode_context::SmackerDecodeContext
+    decode_context::SmackerDecodeContext,
+    flags::*,
 };
