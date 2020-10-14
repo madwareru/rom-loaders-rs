@@ -22,7 +22,7 @@ use {
         cmp::Ordering
     }
 };
-use crate::multimedia::smacker::huffman::HuffmanContext;
+use crate::multimedia::smacker::huffman::{HuffmanContext, NodeId};
 
 const BLOCK_MONOCHROME: u16 = 0;
 const BLOCK_FULL: u16 = 1;
@@ -74,7 +74,8 @@ pub struct SmackerFileInfo {
     m_clr_tree: Option<HeaderTree>,
     full_tree: Option<HeaderTree>,
     type_tree: Option<HeaderTree>,
-    buffer: Vec<u8>
+    buffer: Vec<u8>,
+    audio_trees: Vec<HuffmanContext>
 }
 impl SmackerFileInfo {
     fn load(stream: &mut Cursor<&[u8]>) -> std::io::Result<(Self, FrameBytesShared)> {
@@ -169,6 +170,10 @@ impl SmackerFileInfo {
             audio_tracks[i].reserve(header.audio_size[i] as usize);
         }
         let sample_rate_per_frame = (audio_rate[0] as f32 * frame_interval / 1000.0).trunc() as usize;
+        let mut audio_trees = Vec::with_capacity(4);
+        for _ in 0..4 {
+            audio_trees.push(HuffmanContext::new());
+        }
 
         Ok(
             (
@@ -186,7 +191,8 @@ impl SmackerFileInfo {
                     audio_flags,
                     audio_tracks,
                     sample_rate_per_frame,
-                    buffer
+                    buffer,
+                    audio_trees
                 },
                 FrameBytesShared{
                     data: frame_bytes_shared
@@ -361,6 +367,7 @@ impl SmackerFileInfo {
 
             // swap trick to settle with borrow checker:
             let mut audio_track = std::mem::replace(&mut self.audio_tracks[track_number], Vec::new());
+            let mut audio_trees = std::mem::replace(&mut self.audio_trees, Vec::new());
 
             with_bit_reader(&mut audio_cursor, |bit_reader| {
                 if bit_reader.read_bits(1)? != 1 {
@@ -381,14 +388,14 @@ impl SmackerFileInfo {
                     else if is_stereo && is_16_bit { 4 }
                     else { 2 };
 
-                let (mut audio_trees, mut i8_bases, mut i16_bases) = (
-                    Vec::with_capacity(bytes_per_sample),
+                let (mut i8_bases, mut i16_bases) = (
                     Vec::with_capacity(bytes_per_sample),
                     Vec::with_capacity(bytes_per_sample)
                 );
-                for _ in 0..bytes_per_sample {
+                for i in 0..bytes_per_sample {
                     bit_reader.read_bits(1)?; // junk bits
-                    audio_trees.push(HuffmanContext::from_tree(bit_reader, 256)?);
+                    audio_trees[i].clear();
+                    HuffmanContext::decode_tree(bit_reader, 256, &mut audio_trees[i], NodeId(0), 0)?;
                     bit_reader.read_bits(1)?; // junk bits
                 }
                 if is_16_bit {
@@ -455,6 +462,7 @@ impl SmackerFileInfo {
                 }
                 Ok(())
             })?;
+            self.audio_trees = audio_trees;
             self.audio_tracks[track_number] = audio_track;
             Ok(())
         }

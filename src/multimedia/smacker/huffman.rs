@@ -2,7 +2,7 @@ use std::io::Read;
 use super::bit_reader::BitReader;
 
 #[derive(Copy, Clone, Default)]
-pub(crate) struct NodeId(usize);
+pub(crate) struct NodeId(pub(crate) usize);
 
 #[derive(Copy, Clone)]
 pub(crate) enum HuffmanNode {
@@ -27,14 +27,26 @@ pub(crate) struct HuffmanContext {
     root_node_id: NodeId
 }
 impl HuffmanContext {
-    fn new() -> Self {
+    ///
+    /// It's better not to use this method directly, but if needed,
+    /// you can create a context without an actual fill of it
+    /// It is needed in situations when we need to reuse exact same
+    /// context many times on different trees (e.g. when decoding an audio for example)
+    ///
+    pub(crate) fn new() -> Self {
         let mut node_arena = Vec::new();
-        let root_node_id = NodeId(node_arena.len());
         node_arena.push(Default::default());
+        let root_node_id = NodeId(0);
         Self {
             node_arena,
             root_node_id
         }
+    }
+
+    pub(crate) fn clear(&mut self) {
+        self.node_arena.clear();
+        self.node_arena.push(Default::default());
+        self.root_node_id = NodeId(0);
     }
 
     pub(crate) fn get_value<TStream: Read>(
@@ -68,7 +80,7 @@ impl HuffmanContext {
         Ok(context)
     }
 
-    fn decode_tree<TStream: Read>(
+    pub(crate) fn decode_tree<TStream: Read>(
         bit_reader: &mut BitReader<TStream>,
         max_depth: usize,
         context: &mut HuffmanContext,
