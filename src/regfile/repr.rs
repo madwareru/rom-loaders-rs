@@ -159,7 +159,7 @@ impl Registry {
                         NodeData::Directory(offset, count) => {
                             root_offset = offset;
                             for _ in 0..count {
-                                queue.push_back((root_path.clone(), root_offset));
+                                queue.push_back((Rc::new(new_path.clone()), root_offset));
                                 root_offset += 0x20;
                             }
                         }
