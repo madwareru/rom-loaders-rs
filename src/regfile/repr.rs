@@ -51,7 +51,7 @@ impl RegistryNodeRepresentationTriplet {
     fn turn_to_node_data(self, root_header: &RootRegistryHeader) -> NodeData {
         match NodeKind::from(self.tag) {
             NodeKind::Directory => {
-                let start = root_header.get_data_origin() + self.data_byte_0 as usize * 0x20;
+                let start = 0x18 + self.data_byte_0 as usize * 0x20;
                 NodeData::Directory(start, self.data_byte_1 as usize)
             },
             NodeKind::Int => {
@@ -157,6 +157,7 @@ impl Registry {
                     new_path.push_str(&name);
                     match node_data {
                         NodeData::Directory(offset, count) => {
+                            new_path.push('/');
                             root_offset = offset;
                             for _ in 0..count {
                                 queue.push_back((Rc::new(new_path.clone()), root_offset));
