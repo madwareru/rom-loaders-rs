@@ -1,7 +1,8 @@
 use bin_serialization_rs::{Reflectable, SerializationReflector};
 use std::ops::Deref;
+use bitflags::_core::fmt::{Debug, Formatter};
 
-#[derive(Default, Clone, PartialEq, Debug)]
+#[derive(Default, Clone, PartialEq)]
 pub struct CP866String(String);
 impl Reflectable for CP866String {
     fn reflect<TSerializationReflector: SerializationReflector>(
@@ -20,6 +21,11 @@ impl Deref for CP866String {
     type Target = String;
     fn deref(&self) -> &Self::Target {
         &(self.0)
+    }
+}
+impl Debug for CP866String {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(self)
     }
 }
 
