@@ -6,6 +6,8 @@ pub mod regfile;
 pub mod images;
 pub mod shared_types;
 pub mod multimedia;
+pub mod alm;
+
 mod stream_utils;
 
 #[cfg(test)]
