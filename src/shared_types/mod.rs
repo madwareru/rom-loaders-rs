@@ -25,7 +25,9 @@ impl Deref for CP866String {
 }
 impl Debug for CP866String {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(self)
+        f.write_str("\"")?;
+        f.write_str(self)?;
+        f.write_str("\"")
     }
 }
 
