@@ -107,12 +107,12 @@ impl RegistryHeader {
 }
 
 
-pub struct RegistryInfoEnumeration<'a>
+pub struct RegistryInfoEnumeration
 {
-    pub ints: Vec<&'a str>,
-    pub floats: Vec<&'a str>,
-    pub strings: Vec<&'a str>,
-    pub int_arrays: Vec<&'a str>
+    pub ints: Vec<String>,
+    pub floats: Vec<String>,
+    pub strings: Vec<String>,
+    pub int_arrays: Vec<String>
 }
 
 pub struct Registry {
@@ -260,10 +260,10 @@ impl Registry {
             strings: Vec::new(),
             int_arrays: Vec::new()
         };
-        for (key, _) in self.ints_lookup.iter() { enumeration.ints.push(key); };
-        for (key, _) in self.floats_lookup.iter() { enumeration.floats.push(key); };
-        for (key, _) in self.strings_lookup.iter() { enumeration.strings.push(key); };
-        for (key, _) in self.int_array_lookup.iter() { enumeration.int_arrays.push(key); };
+        for (key, _) in self.ints_lookup.iter() { enumeration.ints.push(key.to_string()); };
+        for (key, _) in self.floats_lookup.iter() { enumeration.floats.push(key.to_string()); };
+        for (key, _) in self.strings_lookup.iter() { enumeration.strings.push(key.to_string()); };
+        for (key, _) in self.int_array_lookup.iter() { enumeration.int_arrays.push(key.to_string()); };
         enumeration.ints.sort();
         enumeration.floats.sort();
         enumeration.int_arrays.sort();
