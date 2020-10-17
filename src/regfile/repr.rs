@@ -224,7 +224,7 @@ impl Registry {
                     let (offset, size) = array_entry.0;
                     self.stream.seek(SeekFrom::Start(offset as u64))?;
                     let mut vec = Vec::with_capacity(size);
-                    for _ in 0..size {
+                    for _ in 0..size/4 {
                         let value = *U32Wrapper::deserialize(&mut self.stream, Endianness::LittleEndian)?;
                         let value = unsafe {
                             let x  = &[value] as *const u32;
