@@ -71,11 +71,11 @@ impl RegistryNodeRepresentationTriplet {
                 NodeData::Float(data)
             }
             NodeKind::String => {
-                let start = root_header.get_data_origin() + self.data_byte_0 as usize * 0x20;
+                let start = root_header.get_data_origin() + self.data_byte_0 as usize;
                 NodeData::String(start, self.data_byte_1 as usize)
             }
             NodeKind::IntArray => {
-                let start = root_header.get_data_origin() + self.data_byte_0 as usize * 0x20;
+                let start = root_header.get_data_origin() + self.data_byte_0 as usize;
                 NodeData::IntArray(start, self.data_byte_1 as usize)
             }
         }
