@@ -45,6 +45,7 @@ impl Default for SectionKind {
     }
 }
 
+#[derive(Debug)]
 pub struct AlmMap {
     pub general_info: GeneralMapInfoSection,
     pub tiles: Option<TilesSection>,
