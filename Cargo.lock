@@ -11,8 +11,8 @@ dependencies = [
 
 [[package]]
 name = "bin-serialization-rs"
-version = "0.1.4"
-source = "git+https://github.com/madwareru/bin-serialization-rs#604bc60c54f82ad94115c3e9c1199c94a7b44041"
+version = "0.1.5"
+source = "git+https://github.com/madwareru/bin-serialization-rs#154a46b926a8fb20b10b2c4fd0aa6b8035918049"
 dependencies = [
  "cp866-rs",
 ]
@@ -120,7 +120,7 @@ checksum = "26412eb97c6b088a6997e05f69403a802a92d520de2f8e63c2b65f9e0f47c4e8"
 
 [[package]]
 name = "rom-loaders-rs"
-version = "0.3.9"
+version = "0.4.0"
 dependencies = [
  "bin-serialization-rs",
  "bitflags",

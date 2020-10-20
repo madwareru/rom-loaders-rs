@@ -21,10 +21,9 @@ pub use {
     sacks_section::*,
     effects_section::*
 };
-use bitflags::_core::cell::Ref;
 use bin_serialization_rs::{Reflectable, SerializationReflector, Endianness};
 use std::convert::TryFrom;
-use std::io::{ErrorKind, Read, Seek, SeekFrom};
+use std::io::{ErrorKind, Read};
 
 #[derive(Copy, Clone, PartialEq, Debug, num_enum::TryFromPrimitive)]
 #[repr(u32)]
@@ -59,7 +58,7 @@ pub struct AlmMap {
     pub effects: Option<EffectsSection>
 }
 impl AlmMap {
-    pub fn read<TStream: Read + Seek>(stream: &mut TStream) -> std::io::Result<Self> {
+    pub fn read<TStream: Read>(stream: &mut TStream) -> std::io::Result<Self> {
         let alm_header = AlmHeader::deserialize(stream, Endianness::LittleEndian)?;
         let general_map_info_header = SectionHeader::deserialize(stream, Endianness::LittleEndian)?;
         assert_eq!(general_map_info_header.section_kind, SectionKind::General);
@@ -104,14 +103,19 @@ impl AlmMap {
                 SectionKind::Fractions => {
                     fractions = Some(FractionsSection::read(stream, &general_info)?);
                 },
-                // SectionKind::Units => todo!(),
-                // SectionKind::Triggers => todo!(),
-                // SectionKind::Sacks => todo!(),
-                // SectionKind::Effects => todo!(),
-                _ => {
-                    //todo: instead of seek read sections data
-                    stream.seek(SeekFrom::Current(next_section_header.data_size as i64))?;
-                }
+                SectionKind::Units => {
+                    units = Some(UnitsSection::read(stream, &general_info)?);
+                },
+                SectionKind::Triggers => {
+                    triggers = Some(TriggersSection::read_from_stream(stream, Endianness::LittleEndian)?);
+                },
+                SectionKind::Sacks => {
+                    sacks = Some(SacksSection::read(stream, &general_info)?);
+                },
+                SectionKind::Effects => {
+                    effects = Some(EffectsSection::read_from_stream(stream, Endianness::LittleEndian)?);
+                },
+                _ => unreachable!()
             }
         }
         Ok(Self {

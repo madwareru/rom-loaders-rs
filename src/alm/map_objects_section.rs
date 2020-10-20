@@ -1,6 +1,4 @@
 use std::io::Read;
-use crate::shared_types::U16Wrapper;
-use bin_serialization_rs::{Endianness, Reflectable};
 
 #[derive(Debug)]
 pub struct MapObjectsSection {

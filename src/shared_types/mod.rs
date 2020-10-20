@@ -76,6 +76,28 @@ impl Deref for U16Wrapper {
 }
 
 #[derive(Default, Clone, PartialEq)]
+pub struct U64Wrapper(pub u64);
+impl Reflectable for U64Wrapper {
+    fn reflect<TSerializationReflector: SerializationReflector>(
+        &mut self,
+        reflector: &mut TSerializationReflector,
+    ) -> std::io::Result<()> {
+        reflector.reflect_u64(&mut self.0)
+    }
+}
+impl AsRef<u64> for U64Wrapper {
+    fn as_ref(&self) -> &u64 {
+        &(self.0)
+    }
+}
+impl Deref for U64Wrapper {
+    type Target = u64;
+    fn deref(&self) -> &Self::Target {
+        &(self.0)
+    }
+}
+
+#[derive(Default, Clone, PartialEq)]
 pub struct I16Wrapper(pub i16);
 impl Reflectable for I16Wrapper {
     fn reflect<TSerializationReflector: SerializationReflector>(
