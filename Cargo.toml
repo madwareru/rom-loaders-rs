@@ -11,3 +11,4 @@ cp866-rs = { git = "https://github.com/madwareru/cp866-rs", version = "0.1.2"}
 bin-serialization-rs = { git = "https://github.com/madwareru/bin-serialization-rs", version = "0.1.4"}
 regex = "1.3.9"
 bitflags = "1.0"
+num_enum = "0.5"
