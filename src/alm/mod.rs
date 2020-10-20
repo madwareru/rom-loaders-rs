@@ -23,7 +23,7 @@ pub use {
 };
 use bin_serialization_rs::{Reflectable, SerializationReflector, Endianness};
 use std::convert::TryFrom;
-use std::io::{ErrorKind, Read};
+use std::io::{ErrorKind, Read, Cursor, Seek, SeekFrom};
 
 #[derive(Copy, Clone, PartialEq, Debug, num_enum::TryFromPrimitive)]
 #[repr(u32)]
@@ -59,11 +59,13 @@ pub struct AlmMap {
     pub effects: Option<EffectsSection>
 }
 impl AlmMap {
-    pub fn read<TStream: Read>(stream: &mut TStream) -> std::io::Result<Self> {
+    pub fn read<TStream: Read + AsRef<[u8]>>(stream: &mut Cursor<TStream>) -> std::io::Result<Self> {
         let alm_header = AlmHeader::deserialize(stream, Endianness::LittleEndian)?;
         let general_map_info_header = SectionHeader::deserialize(stream, Endianness::LittleEndian)?;
         assert_eq!(general_map_info_header.section_kind, SectionKind::General);
+        let mut position_before_section_read = stream.position();
         let general_info = GeneralMapInfoSection::deserialize(stream, Endianness::LittleEndian)?;
+        stream.seek(SeekFrom::Start(position_before_section_read + general_map_info_header.data_size as u64))?;
         let (
             mut tiles,
             mut height_map,
@@ -88,6 +90,7 @@ impl AlmMap {
 
         for _ in 1..alm_header.section_count {
             let next_section_header = SectionHeader::deserialize(stream, Endianness::LittleEndian)?;
+            position_before_section_read = stream.position();
             match next_section_header.section_kind {
                 SectionKind::Tiles => {
                     tiles = Some(TilesSection::read(stream, &general_info)?);
@@ -118,6 +121,7 @@ impl AlmMap {
                 },
                 _ => unreachable!()
             }
+            stream.seek(SeekFrom::Start(position_before_section_read + next_section_header.data_size as u64))?;
         }
         Ok(Self {
             general_info,
