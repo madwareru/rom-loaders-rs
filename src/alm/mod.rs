@@ -117,7 +117,6 @@ impl AlmMap {
                     sacks = Some(SacksSection::read(stream, &general_info)?);
                 },
                 SectionKind::Effects => {
-
                     //effects = Some(EffectsSection::read_from_stream(stream, Endianness::LittleEndian)?);
                 },
                 _ => unreachable!()

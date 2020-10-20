@@ -21,8 +21,8 @@ impl Reflectable for ItemEntry {
 #[derive(Clone, Debug)]
 pub struct SackEntry {
     pub unit_id: u32,
-    pub x_coord: u16,
-    pub y_coord: u16,
+    pub x_coord: u32,
+    pub y_coord: u32,
     pub money: u32,
     pub items: Vec<ItemEntry>
 }
@@ -30,8 +30,8 @@ impl SackEntry {
     pub fn read_from_stream<TStream: Read>(stream: &mut TStream, endianness: Endianness) -> Result<Self> {
         let item_count = *(U32Wrapper::deserialize(stream, endianness))?;
         let unit_id = *(U32Wrapper::deserialize(stream, endianness))?;
-        let x_coord = *(U16Wrapper::deserialize(stream, endianness))?;
-        let y_coord = *(U16Wrapper::deserialize(stream, endianness))?;
+        let x_coord = *(U32Wrapper::deserialize(stream, endianness))?;
+        let y_coord = *(U32Wrapper::deserialize(stream, endianness))?;
         let money = *(U32Wrapper::deserialize(stream, endianness))?;
         let mut items = Vec::with_capacity(item_count as usize);
         for _ in 0..item_count {

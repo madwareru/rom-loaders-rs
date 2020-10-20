@@ -1,6 +1,6 @@
 [package]
 name = "rom-loaders-rs"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["madwareru <madware.ru@gmail.com>"]
 edition = "2018"
 
