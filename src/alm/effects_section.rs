@@ -5,14 +5,14 @@ use crate::shared_types::{U32Wrapper, U16Wrapper, U64Wrapper};
 #[derive(Clone, Default, Debug)]
 pub struct EffectModifier {
     pub modifier_type: u16,
-    pub effect_id: u32
+    pub modifier_value: u32
 }
 impl Reflectable for EffectModifier {
     fn reflect<TSerializationReflector: SerializationReflector>(
         &mut self, reflector: &mut TSerializationReflector
     ) -> Result<()> {
         reflector.reflect_u16(&mut self.modifier_type)?;
-        reflector.reflect_u32(&mut self.effect_id)
+        reflector.reflect_u32(&mut self.modifier_value)
     }
 }
 
