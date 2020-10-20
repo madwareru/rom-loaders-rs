@@ -1,6 +1,6 @@
 use bin_serialization_rs::{Reflectable, SerializationReflector, Endianness};
 use std::io::{Result, Read};
-use crate::shared_types::{U32Wrapper, U16Wrapper};
+use crate::shared_types::{U32Wrapper};
 
 #[derive(Clone, Default, Debug)]
 pub struct ItemEntry {

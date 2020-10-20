@@ -6,7 +6,6 @@ pub struct FractionEntry {
     pub color_id: u32,
     pub flags: u32,
     pub money: u32,
-    name_bytes: [u8;0x20],
     pub name: String,
     pub diplomacy_states: [u16;0x10]
 }
@@ -17,13 +16,14 @@ impl Reflectable for FractionEntry {
         reflector.reflect_u32(&mut self.color_id)?;
         reflector.reflect_u32(&mut self.flags)?;
         reflector.reflect_u32(&mut self.money)?;
-        for i in 0..self.name_bytes.len() {
-            reflector.reflect_u8(&mut self.name_bytes[i])?;
+        let mut name_bytes = [0u8;0x20];
+        for i in 0..name_bytes.len() {
+            reflector.reflect_u8(&mut name_bytes[i])?;
         }
+        self.name = cp866_rs::decode_bytes(&name_bytes);
         for i in 0..self.diplomacy_states.len() {
             reflector.reflect_u16(&mut self.diplomacy_states[i])?;
         }
-        self.name = cp866_rs::decode_bytes(&self.name_bytes);
         Ok(())
     }
 }
