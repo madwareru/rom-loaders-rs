@@ -306,21 +306,21 @@ impl TriggerEntry {
         let check_23_operator = *U32Wrapper::deserialize(stream, endianness)?;
         let check_45_operator = *U32Wrapper::deserialize(stream, endianness)?;
 
-        let check_01_operator = if check_01_operator == 0xFFFFFFFF {
+        let check_01_operator = if check_identifiers[0] == 0 || check_identifiers[1] == 0 {
             None
         } else {
             Some(trigger_enums::CheckOperator::try_from_primitive(
                 check_01_operator
             ).map_err(|_| std::io::Error::from(ErrorKind::InvalidInput))?)
         };
-        let check_23_operator = if check_23_operator == 0xFFFFFFFF {
+        let check_23_operator = if check_identifiers[2] == 0 || check_identifiers[3] == 0 {
             None
         } else {
             Some(trigger_enums::CheckOperator::try_from_primitive(
                 check_23_operator
             ).map_err(|_| std::io::Error::from(ErrorKind::InvalidInput))?)
         };
-        let check_45_operator = if check_45_operator == 0xFFFFFFFF {
+        let check_45_operator = if check_identifiers[4] == 0 || check_identifiers[5] == 0 {
             None
         } else {
             Some(trigger_enums::CheckOperator::try_from_primitive(
