@@ -302,14 +302,18 @@ impl TriggerEntry {
         for value in instance_identifiers.iter_mut() {
             *value = *(U32Wrapper::deserialize(stream, endianness))?;
         }
+        let check_01_operator = *U32Wrapper::deserialize(stream, endianness)?;
+        let check_23_operator = *U32Wrapper::deserialize(stream, endianness)?;
+        let check_45_operator = *U32Wrapper::deserialize(stream, endianness)?;
+
         let check_01_operator = trigger_enums::CheckOperator::try_from_primitive(
-            *U32Wrapper::deserialize(stream, endianness)?
+            check_01_operator
         ).map_err(|_| std::io::Error::from(ErrorKind::InvalidInput))?;
         let check_23_operator = trigger_enums::CheckOperator::try_from_primitive(
-            *U32Wrapper::deserialize(stream, endianness)?
+            check_23_operator
         ).map_err(|_| std::io::Error::from(ErrorKind::InvalidInput))?;
         let check_45_operator = trigger_enums::CheckOperator::try_from_primitive(
-            *U32Wrapper::deserialize(stream, endianness)?
+            check_45_operator
         ).map_err(|_| std::io::Error::from(ErrorKind::InvalidInput))?;
         let run_once = *(U32Wrapper::deserialize(stream, endianness))?;
         Ok(Self {
