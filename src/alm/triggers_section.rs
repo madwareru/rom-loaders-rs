@@ -282,9 +282,9 @@ pub struct TriggerEntry {
     pub name: String,
     pub check_identifiers: [u32; 6],
     pub instance_identifiers: [u32; 4],
-    pub check_01_operator: trigger_enums::CheckOperator,
-    pub check_23_operator: trigger_enums::CheckOperator,
-    pub check_45_operator: trigger_enums::CheckOperator,
+    pub check_01_operator: Option<trigger_enums::CheckOperator>,
+    pub check_23_operator: Option<trigger_enums::CheckOperator>,
+    pub check_45_operator: Option<trigger_enums::CheckOperator>,
     pub run_once: u32
 }
 impl TriggerEntry {
@@ -306,15 +306,27 @@ impl TriggerEntry {
         let check_23_operator = *U32Wrapper::deserialize(stream, endianness)?;
         let check_45_operator = *U32Wrapper::deserialize(stream, endianness)?;
 
-        let check_01_operator = trigger_enums::CheckOperator::try_from_primitive(
-            check_01_operator
-        ).map_err(|_| std::io::Error::from(ErrorKind::InvalidInput))?;
-        let check_23_operator = trigger_enums::CheckOperator::try_from_primitive(
-            check_23_operator
-        ).map_err(|_| std::io::Error::from(ErrorKind::InvalidInput))?;
-        let check_45_operator = trigger_enums::CheckOperator::try_from_primitive(
-            check_45_operator
-        ).map_err(|_| std::io::Error::from(ErrorKind::InvalidInput))?;
+        let check_01_operator = if check_01_operator == 0xFFFFFFFF {
+            None
+        } else {
+            Some(trigger_enums::CheckOperator::try_from_primitive(
+                check_01_operator
+            ).map_err(|_| std::io::Error::from(ErrorKind::InvalidInput))?)
+        };
+        let check_23_operator = if check_23_operator == 0xFFFFFFFF {
+            None
+        } else {
+            Some(trigger_enums::CheckOperator::try_from_primitive(
+                check_23_operator
+            ).map_err(|_| std::io::Error::from(ErrorKind::InvalidInput))?)
+        };
+        let check_45_operator = if check_45_operator == 0xFFFFFFFF {
+            None
+        } else {
+            Some(trigger_enums::CheckOperator::try_from_primitive(
+                check_45_operator
+            ).map_err(|_| std::io::Error::from(ErrorKind::InvalidInput))?)
+        };
         let run_once = *(U32Wrapper::deserialize(stream, endianness))?;
         Ok(Self {
             name,
