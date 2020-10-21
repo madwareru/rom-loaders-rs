@@ -93,30 +93,39 @@ impl AlmMap {
             position_before_section_read = stream.position();
             match next_section_header.section_kind {
                 SectionKind::Tiles => {
+                    println!("read tiles section");
                     tiles = Some(TilesSection::read(stream, &general_info)?);
                 },
                 SectionKind::HeightMap => {
+                    println!("read heightmap section");
                     height_map = Some(HeightMapSection::read(stream, &general_info)?);
                 },
                 SectionKind::MapObjects => {
+                    println!("read map objects section");
                     map_objects = Some(MapObjectsSection::read(stream, &general_info)?);
                 },
                 SectionKind::Structures => {
+                    println!("read structures section");
                     structures = Some(StructuresSection::read(stream, &general_info)?);
                 },
                 SectionKind::Fractions => {
+                    println!("read fractions section");
                     fractions = Some(FractionsSection::read(stream, &general_info)?);
                 },
                 SectionKind::Units => {
+                    println!("read units section");
                     units = Some(UnitsSection::read(stream, &general_info)?);
                 },
                 SectionKind::Triggers => {
+                    println!("read triggers section");
                     triggers = Some(TriggersSection::read_from_stream(stream, Endianness::LittleEndian)?);
                 },
                 SectionKind::Sacks => {
+                    println!("read sacks section");
                     sacks = Some(SacksSection::read(stream, &general_info)?);
                 },
                 SectionKind::Effects => {
+                    println!("read effects section");
                     effects = Some(EffectsSection::read_from_stream(stream, Endianness::LittleEndian)?);
                 },
                 _ => unreachable!()
