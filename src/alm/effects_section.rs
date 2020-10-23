@@ -4,7 +4,7 @@ use crate::shared_types::{U32Wrapper, U16Wrapper, U64Wrapper};
 
 #[derive(Clone, Default, Debug)]
 pub struct EffectModifier {
-    pub modifier_type: u16,
+    pub modifier_type: u16, // Parameter type in data bin
     pub modifier_value: u32
 }
 impl Reflectable for EffectModifier {
