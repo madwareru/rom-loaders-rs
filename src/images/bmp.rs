@@ -30,7 +30,7 @@ impl Reflectable for RawBmpHeader {
         reflector.reflect_u32(&mut self._bi_clr_used)?;
         reflector.reflect_u32(&mut self._bi_clr_important)
     }
-
+}
 
 pub struct RawBmp {
     pub header: RawBmpHeader,
