@@ -62,7 +62,7 @@ impl BmpSprite {
                             }  else {
                                 255
                             };
-                            *entry = 0xFF000000 + b * 0x10000 + g * 0x100 + r;
+                            *entry = 0xFF000000 | b * 0x10000 | g * 0x100 + r;
                         }
                         Ok(
                             Self::Paletted {
@@ -83,15 +83,15 @@ impl BmpSprite {
                         for _ in 0..height {
                             for _ in 0..width {
                                 let b = bmp.raw_data[s_offset];
-                                colors[d_offset] += b as u32;
+                                colors[d_offset] |= b as u32;
                                 s_offset += 1;
 
                                 let g = bmp.raw_data[s_offset];
-                                colors[d_offset] += g as u32 * 0x100;
+                                colors[d_offset] |= g as u32 * 0x100;
                                 s_offset += 1;
 
                                 let r = bmp.raw_data[s_offset];
-                                colors[d_offset] += r as u32 * 0x10000;
+                                colors[d_offset] |= r as u32 * 0x10000;
                                 s_offset += 1;
                                 d_offset += 1;
                             }
