@@ -62,7 +62,7 @@ impl BmpSprite {
                             }  else {
                                 255
                             };
-                            *entry = 0xFF000000 | b * 0x10000 | g * 0x100 + r;
+                            *entry = 0xFF000000 | r * 0x10000 | g * 0x100 + b;
                         }
                         Ok(
                             Self::Paletted {
