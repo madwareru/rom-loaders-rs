@@ -35,7 +35,7 @@ impl BmpSprite {
                                 s_offset += 1;
                                 d_offset += 1;
                             }
-                            if d_offset > slide { d_offset -= slide; }
+                            if d_offset >= slide { d_offset -= slide; }
                         }
                         let mut palette = bmp.palette.unwrap();
                         for entry in palette.iter_mut() {
@@ -95,7 +95,7 @@ impl BmpSprite {
                                 s_offset += 1;
                                 d_offset += 1;
                             }
-                            if d_offset > slide { d_offset -= slide; }
+                            if d_offset >= slide { d_offset -= slide; }
                         }
                         Ok(Self::TrueColor {
                             width,
