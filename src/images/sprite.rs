@@ -44,9 +44,9 @@ impl BmpSprite {
                             let g = clr & 0xFF; clr = clr / 0x100;
                             let r = clr & 0xFF;
 
-                            let b = ((b as f32 / 255.0).powf(2.0) * 255.0) as u32;
-                            let g = ((g as f32 / 255.0).powf(2.0) * 255.0) as u32;
-                            let r = ((r as f32 / 255.0).powf(2.0) * 255.0) as u32;
+                            let b = ((b as f32 / 255.0).powf(0.5) * 255.0) as u32;
+                            let g = ((g as f32 / 255.0).powf(0.5) * 255.0) as u32;
+                            let r = ((r as f32 / 255.0).powf(0.5) * 255.0) as u32;
 
                             *entry = 0xFF000000 | r * 0x10000 | g * 0x100 + b;
                         }
