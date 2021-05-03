@@ -44,24 +44,10 @@ impl BmpSprite {
                             let g = clr & 0xFF; clr = clr / 0x100;
                             let r = clr & 0xFF;
 
-                            let b = if b < 170 {
-                                b * 3 / 2
-                            } else {
-                                255
-                            };
+                            let b = ((b as f32 / 255.0).powf(2.0) * 255.0) as u32;
+                            let g = ((g as f32 / 255.0).powf(2.0) * 255.0) as u32;
+                            let r = ((r as f32 / 255.0).powf(2.0) * 255.0) as u32;
 
-                            let g = if g <= 127 {
-                                g * 2
-                            } else {
-                                255
-                            };
-                            let g = (g * 900) / 1000;
-
-                            let r = if r <= 127 {
-                                r * 2
-                            }  else {
-                                255
-                            };
                             *entry = 0xFF000000 | r * 0x10000 | g * 0x100 + b;
                         }
                         Ok(
