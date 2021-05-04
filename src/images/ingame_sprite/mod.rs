@@ -11,8 +11,8 @@ pub struct ImageFrameData {
 }
 
 pub struct ImageData {
-    raw: Vec<u8>,
-    frames: Vec<ImageFrameData>
+    pub raw: Vec<u8>,
+    pub frames: Vec<ImageFrameData>
 }
 
 #[derive(PartialEq, Clone, Copy)]
