@@ -10,16 +10,17 @@ pub struct ImageFrameData {
     pub data_range: Range<usize>
 }
 
-pub struct ImageData {
-    pub raw: Vec<u8>,
-    pub frames: Vec<ImageFrameData>
-}
-
 #[derive(PartialEq, Clone, Copy)]
 pub enum ImageType {
     Dot256,
     Dot16,
     Dot16a
+}
+
+pub struct ImageData {
+    pub image_type: ImageType,
+    pub raw: Vec<u8>,
+    pub frames: Vec<ImageFrameData>
 }
 
 pub(crate) struct SpriteInfo {
@@ -37,9 +38,9 @@ pub fn read_image(
             if has_palette {
                 stream.seek(SeekFrom::Current(4 * 256))?;
             }
-            read_image_frames(stream, given_sprite_count)
+            read_image_frames(stream, given_sprite_count, image_type)
         },
-        ImageType::Dot16 => read_image_frames(stream, given_sprite_count)
+        ImageType::Dot16 => read_image_frames(stream, given_sprite_count, image_type)
     }
 }
 
@@ -66,7 +67,8 @@ pub fn read_palette(
 
 pub(crate) fn read_image_frames(
     stream: &mut Cursor<&[u8]>,
-    given_sprite_count: u32
+    given_sprite_count: u32,
+    image_type: ImageType
 ) -> Result<ImageData> {
     let mut raw_data_buffer = vec![0u8; 0x10000];
     let mut sprite_data = Vec::new();
@@ -92,7 +94,8 @@ pub(crate) fn read_image_frames(
     }
     Ok(ImageData {
         raw: sprite_data,
-        frames: image_frames
+        frames: image_frames,
+        image_type
     })
 }
 
