@@ -3,7 +3,7 @@ use std::io::{Result, Read, Seek, Cursor, SeekFrom};
 use bin_serialization_rs::{Reflectable, Endianness};
 use crate::shared_types::U32Wrapper;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct ImageFrameData {
     pub width: u32,
     pub height: u32,
@@ -25,7 +25,7 @@ pub struct ImageData {
 
 pub(crate) struct SpriteInfo {
     given_sprite_count: u32,
-    has_palette: u32
+    has_palette: bool
 }
 
 pub fn read_image(
@@ -56,7 +56,7 @@ pub fn read_palette(
             } else {
                 let mut v = Vec::with_capacity(256);
                 for _ in 0..256 {
-                    v.add(*U32Wrapper::deserialize(stream, Endianness::LittleEndian)?);
+                    v.push(*U32Wrapper::deserialize(stream, Endianness::LittleEndian)?);
                 }
                 Ok(Some(v))
             }
@@ -89,8 +89,8 @@ pub(crate) fn read_image_frames(
         stream.read(&mut raw_data_buffer[0..data_size])?;
         staging_frame.data_range.start = staging_frame.data_range.end;
         staging_frame.data_range.end = staging_frame.data_range.start + data_size;
-        (&raw_data_buffer[0..data_size]).iter().for_each(|s| sprite_data.add(*s));
-        image_frames.add(staging_frame);
+        (&raw_data_buffer[0..data_size]).iter().for_each(|s| sprite_data.push(*s));
+        image_frames.push(staging_frame.clone());
     }
     Ok(ImageData {
         raw: sprite_data,
@@ -106,6 +106,6 @@ pub(crate) fn read_sprite_count_info(stream: &mut Cursor<&[u8]>) -> Result<Sprit
     stream.seek(SeekFrom::Start(old_position))?;
     Ok(SpriteInfo{
         given_sprite_count: sprite_count & 0x7FFFFFFF,
-        has_palette: sprite_count & 0x80000000
+        has_palette: sprite_count & 0x80000000 != 0
     })
 }
