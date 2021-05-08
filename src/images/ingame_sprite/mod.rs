@@ -56,7 +56,10 @@ pub fn read_palette(
             } else {
                 let mut v = Vec::with_capacity(256);
                 for _ in 0..256 {
-                    v.push(*U32Wrapper::deserialize(stream, Endianness::LittleEndian)?);
+                    v.push(
+                        *U32Wrapper::deserialize(stream, Endianness::LittleEndian)?
+                        | 0xFF00000000 // So it is not transparent
+                    );
                 }
                 Ok(Some(v))
             }
