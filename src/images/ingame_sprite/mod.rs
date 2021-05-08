@@ -58,7 +58,7 @@ pub fn read_palette(
                 for _ in 0..256 {
                     v.push(
                         *U32Wrapper::deserialize(stream, Endianness::LittleEndian)?
-                        | 0xFF00000000 // So it is not transparent
+                        | 0xFF_00_00_00 // So it is not transparent
                     );
                 }
                 Ok(Some(v))
