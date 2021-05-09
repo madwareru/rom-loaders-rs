@@ -68,6 +68,24 @@ pub fn read_palette(
     }
 }
 
+pub const DEFAULT_RAW_PALETTE_OFFSET: usize = 0x36;
+pub fn read_raw_palette(
+    stream: &mut Cursor<&[u8]>,
+    offset: usize
+) -> Result<Option<Vec<u32>>> {
+    let old_position = stream.position();
+    stream.seek(SeekFrom::Current(offset as i64))?;
+    let mut v = Vec::with_capacity(256);
+    for _ in 0..256 {
+        v.push(
+            *U32Wrapper::deserialize(stream, Endianness::LittleEndian)?
+                | 0xFF_00_00_00 // So it is not transparent
+        );
+    }
+    stream.seek(SeekFrom::Start(old_position))?;
+    Ok(Some(v))
+}
+
 pub(crate) fn read_image_frames(
     stream: &mut Cursor<&[u8]>,
     given_sprite_count: u32,
