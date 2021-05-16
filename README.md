@@ -8,5 +8,5 @@ loaders for in-game file formats used in a Rage Of Mages game
 - [x] text files in code page 866
 - [x] .reg files
 - [x] .bmp file subset used in a game
-- [ ] image files (.16/.16a/.256)
+- [x] image files (.16/.16a/.256)
 - [x] map files(.alm)
