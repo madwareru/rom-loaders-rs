@@ -27,8 +27,6 @@ impl BmpSprite {
                 match bmp.header.bi_bit_count {
                     8 => {
                         let mut palette_indexes = vec![0u8; bmp.raw_data.len()];
-                        let remainder = width % 4;
-                        let scanline_padding = if remainder == 0 { 0 } else { 4 - remainder };
                         let mut d_offset = if upside_down { height * width - width } else { 0 };
                         let slide = width * 2;
                         let mut s_offset = 0;
@@ -38,7 +36,7 @@ impl BmpSprite {
                                 s_offset += 1;
                                 d_offset += 1;
                             }
-                            s_offset += scanline_padding;
+                            s_offset += bmp.scanline_padding;
                             if !upside_down {
                                 d_offset += width;
                                 continue;
@@ -83,8 +81,6 @@ impl BmpSprite {
                     },
                     24 => {
                         let mut colors = vec![0xFF000000u32; bmp.raw_data.len() / 3];
-                        let remainder = (width * 3) % 4;
-                        let scanline_padding = if remainder == 0 { 0 } else { 4 - remainder };
                         let mut d_offset = if upside_down { height * width - width } else { 0 };
                         let slide = width * 2;
                         let mut s_offset = 0;
@@ -104,7 +100,7 @@ impl BmpSprite {
                                 s_offset += 1;
                                 d_offset += 1;
                             }
-                            s_offset += scanline_padding;
+                            s_offset += bmp.scanline_padding;
                             if !upside_down {
                                 d_offset += width;
                                 continue;

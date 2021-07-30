@@ -35,6 +35,7 @@ impl Reflectable for RawBmpHeader {
 pub struct RawBmp {
     pub header: RawBmpHeader,
     pub palette: Option<[u32; 256]>, // Exists only for 8bit images
+    pub scanline_padding: usize,
     pub raw_data: Vec<u8>
 }
 impl RawBmp {
@@ -60,17 +61,17 @@ impl RawBmp {
             } else {
                 None
             };
-            let data_size =
-                header.width as usize *
-                header.height as usize *
-                header.bi_bit_count as usize /
-                8;
+            let scanline_size = header.width as usize * header.bi_bit_count as usize / 8;
+            let remainder = scanline_size % 4;
+            let scanline_padding = if remainder == 0 { 0 } else { 4 - remainder };
+            let data_size = (scanline_size + scanline_padding) * header.height.abs() as usize;
             let mut raw_data = vec![0u8; data_size];
             stream.seek(SeekFrom::Start(bfh_pixel_data))?;
             stream.read(&mut raw_data)?;
             Ok(Some(Self {
                 header,
                 palette,
+                scanline_padding,
                 raw_data
             }))
         }
