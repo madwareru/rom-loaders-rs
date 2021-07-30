@@ -21,12 +21,15 @@ impl BmpSprite {
         match raw_bmp {
             None => Ok(Self::NotSupported),
             Some(bmp) => {
+                let upside_down = bmp.header.height > 0;
+                let width = bmp.header.width as usize;
+                let height = bmp.header.height.abs() as usize;
                 match bmp.header.bi_bit_count {
                     8 => {
-                        let width = bmp.header.width as usize;
-                        let height = bmp.header.height as usize;
                         let mut palette_indexes = vec![0u8; bmp.raw_data.len()];
-                        let mut d_offset = height * width - width;
+                        let remainder = width % 4;
+                        let scanline_padding = if remainder == 0 { 0 } else { 4 - remainder };
+                        let mut d_offset = if upside_down { height * width - width } else { 0 };
                         let slide = width * 2;
                         let mut s_offset = 0;
                         for _ in 0..height {
@@ -34,6 +37,11 @@ impl BmpSprite {
                                 palette_indexes[d_offset] = bmp.raw_data[s_offset];
                                 s_offset += 1;
                                 d_offset += 1;
+                            }
+                            s_offset += scanline_padding;
+                            if !upside_down {
+                                d_offset += width;
+                                continue;
                             }
                             if d_offset >= slide { d_offset -= slide; }
                         }
@@ -74,12 +82,13 @@ impl BmpSprite {
                         )
                     },
                     24 => {
-                        let width = bmp.header.width as usize;
-                        let height = bmp.header.height as usize;
                         let mut colors = vec![0xFF000000u32; bmp.raw_data.len() / 3];
-                        let mut d_offset = height * width - width;
+                        let remainder = (width * 3) % 4;
+                        let scanline_padding = if remainder == 0 { 0 } else { 4 - remainder };
+                        let mut d_offset = if upside_down { height * width - width } else { 0 };
                         let slide = width * 2;
                         let mut s_offset = 0;
+
                         for _ in 0..height {
                             for _ in 0..width {
                                 let b = bmp.raw_data[s_offset];
@@ -94,6 +103,11 @@ impl BmpSprite {
                                 colors[d_offset] |= r as u32 * 0x10000;
                                 s_offset += 1;
                                 d_offset += 1;
+                            }
+                            s_offset += scanline_padding;
+                            if !upside_down {
+                                d_offset += width;
+                                continue;
                             }
                             if d_offset >= slide { d_offset -= slide; }
                         }

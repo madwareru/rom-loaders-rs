@@ -5,7 +5,7 @@ use crate::shared_types::U32Wrapper;
 #[derive(Default, Debug, Clone)]
 pub struct RawBmpHeader {
     pub width: u32,
-    pub height: u32,
+    pub height: i32,
     _bi_planes: u16,
     pub bi_bit_count: u16,
     _bi_compression: u32,
@@ -20,7 +20,7 @@ impl Reflectable for RawBmpHeader {
         &mut self, reflector: &mut TSerializationReflector
     ) -> Result<()> {
         reflector.reflect_u32(&mut self.width)?;
-        reflector.reflect_u32(&mut self.height)?;
+        reflector.reflect_i32(&mut self.height)?;
         reflector.reflect_u16(&mut self._bi_planes)?;
         reflector.reflect_u16(&mut self.bi_bit_count)?;
         reflector.reflect_u32(&mut self._bi_compression)?;
